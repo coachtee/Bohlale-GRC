@@ -10,8 +10,8 @@
   <table class="data-table">
     <thead>
       <tr>
-        {% for field in register_type.field_schema %}<th>{{ field.label }}</th>{% endfor %}
-        <th></th>
+        {% for field in register_type.field_schema %}<th scope="col">{{ field.label }}</th>{% endfor %}
+        <th scope="col"></th>
       </tr>
     </thead>
     <tbody>

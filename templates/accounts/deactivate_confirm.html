@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Deactivate account — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Deactivate your account</h1><p class="subtitle">{{ user.email }}</p></div></div>
+<div class="card">
+  <p class="text-sm text-secondary mb-3">
+    This will immediately block you from logging in to Bohlale GRC. Your historical
+    records (documents you authored, approvals you signed, risks you own, and so on)
+    remain part of each organisation's compliance and audit history, since removing
+    them would break that organisation's audit trail. To fully reactivate your
+    account, or to request permanent erasure of your personal information, contact
+    an administrator of the relevant organisation(s), or Bohlale Support.
+  </p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-actions">
+      <button class="btn btn-danger" type="submit">Deactivate my account</button>
+      <a class="btn btn-secondary" href="{% url 'accounts:profile' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

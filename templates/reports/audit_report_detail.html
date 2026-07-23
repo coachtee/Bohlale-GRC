@@ -6,7 +6,7 @@
 <p class="text-xs text-muted mb-1">SCOPE</p>
 <p class="text-sm mb-3">{{ audit.scope|default:"—" }}</p>
 <table class="data-table">
-  <thead><tr><th>Finding</th><th>Severity</th><th>Status</th></tr></thead>
+  <thead><tr><th scope="col">Finding</th><th scope="col">Severity</th><th scope="col">Status</th></tr></thead>
   <tbody>
   {% for f in findings %}
     <tr><td>{{ f.description }}</td><td>{{ f.get_severity_display }}</td><td>{{ f.get_status_display }}</td></tr>

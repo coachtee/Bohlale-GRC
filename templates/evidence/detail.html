@@ -12,7 +12,7 @@
     <p class="text-sm text-secondary">{{ evidence.notes|default:"—" }}</p>
     {% if evidence.file %}
       <div class="divider"></div>
-      <a class="btn btn-secondary btn-sm" href="{{ evidence.file.url }}">{% icon 'download' 'nav-icon' %} Download file</a>
+      <a class="btn btn-secondary btn-sm" href="{% url 'evidence:download' evidence.pk %}">{% icon 'download' 'nav-icon' %} Download file</a>
     {% endif %}
     <div class="divider"></div>
     <p class="text-xs text-muted mb-1">LINKED CONTROLS</p>

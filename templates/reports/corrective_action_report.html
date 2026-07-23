@@ -5,7 +5,7 @@
 {% block report_actions %}<a class="btn btn-secondary" href="?format=xlsx">Export Excel</a>{% endblock %}
 {% block report_content %}
 <table class="data-table">
-  <thead><tr><th>Reference</th><th>Finding</th><th>Source</th><th>Owner</th><th>Due Date</th><th>Status</th></tr></thead>
+  <thead><tr><th scope="col">Reference</th><th scope="col">Finding</th><th scope="col">Source</th><th scope="col">Owner</th><th scope="col">Due Date</th><th scope="col">Status</th></tr></thead>
   <tbody>
   {% for a in actions %}
     <tr>

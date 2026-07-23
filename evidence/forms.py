@@ -32,8 +32,13 @@ class EvidenceForm(TenantModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.organisation is not None:
+            from django.db.models import Q
+
             self.fields["owner"].queryset = User.objects.filter(
                 id__in=Membership.objects.filter(organisation=self.organisation, is_active=True).values("user_id")
             )
             self.fields["related_controls"].queryset = self.fields["related_controls"].queryset.filter(organisation=self.organisation)
             self.fields["related_risks"].queryset = self.fields["related_risks"].queryset.filter(organisation=self.organisation)
+            self.fields["related_requirements"].queryset = self.fields["related_requirements"].queryset.filter(
+                Q(framework__organisation__isnull=True) | Q(framework__organisation=self.organisation)
+            )

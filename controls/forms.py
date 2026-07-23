@@ -29,11 +29,16 @@ class ControlForm(TenantModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.organisation is not None:
+            from django.db.models import Q
+
             self.fields["owner"].queryset = User.objects.filter(
                 id__in=Membership.objects.filter(organisation=self.organisation, is_active=True).values("user_id")
             )
             self.fields["risks"].queryset = self.fields["risks"].queryset.filter(organisation=self.organisation)
             self.fields["policies"].queryset = self.fields["policies"].queryset.filter(organisation=self.organisation)
+            self.fields["framework_requirements"].queryset = self.fields["framework_requirements"].queryset.filter(
+                Q(framework__organisation__isnull=True) | Q(framework__organisation=self.organisation)
+            )
 
 
 class SoAEntryForm(forms.Form):

@@ -25,6 +25,21 @@ def home(request):
 
 
 def health(request):
+    """
+    Public, unauthenticated health check for uptime monitoring (free-tier
+    services like UptimeRobot/healthchecks.io, or a load balancer) — see
+    DEPLOYMENT.md's Monitoring section. Actually checks database
+    connectivity rather than just confirming the process is alive, since
+    "Gunicorn responds" and "the app actually works" are different
+    questions — a DB outage is the most common real-world case this
+    should catch.
+    """
+    from django.db import connection
     from django.http import JsonResponse
 
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except Exception as exc:
+        return JsonResponse({"status": "error", "detail": str(exc)}, status=503)
     return JsonResponse({"status": "ok"})

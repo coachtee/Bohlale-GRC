@@ -75,6 +75,28 @@ class ElectronicSignOffTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Signature.objects.count(), 0)
 
+    def test_already_decided_request_cannot_be_signed_again(self):
+        self.client.login(email="exec@example.com", password="StrongPass123!")
+        self.client.post(
+            reverse("approvals:detail", args=[self.approval_request.pk]),
+            {"decision": "approved", "typed_signature": "Jane Director", "consent": "on"},
+        )
+        self.assertEqual(Signature.objects.count(), 1)
+
+        # Attempting a second decision on the same (now-decided) request
+        # must not create a second signature or change the outcome —
+        # the view only accepts POSTs while status == "pending".
+        response = self.client.post(
+            reverse("approvals:detail", args=[self.approval_request.pk]),
+            {"decision": "rejected", "typed_signature": "Jane Director", "consent": "on"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Signature.objects.count(), 1)
+        self.approval_request.refresh_from_db()
+        self.assertEqual(self.approval_request.status, "approved")
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.status, "approved")
+
 
 class ApprovalTenantIsolationTests(TestCase):
     def setUp(self):

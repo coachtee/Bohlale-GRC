@@ -14,17 +14,38 @@
 <div class="card">
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+      <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Joined</th><th scope="col"></th></tr></thead>
       <tbody>
       {% for m in members %}
         <tr>
           <td>{{ m.user.get_full_name|default:"—" }}</td>
           <td>{{ m.user.email }}</td>
-          <td><span class="badge badge-outline">{{ m.get_role_display }}</span></td>
+          <td>
+            {% if can_manage and m.user_id != request.user.id %}
+            <form method="post" action="{% url 'tenancy:member_update_role' m.pk %}" class="flex items-center gap-1">
+              {% csrf_token %}
+              <select name="role" class="form-select" data-autosubmit aria-label="Change role for {{ m.user.get_full_name|default:m.user.email }}">
+                {% for value, label in role_choices %}
+                  <option value="{{ value }}" {% if value == m.role %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            {% else %}
+            <span class="badge badge-outline">{{ m.get_role_display }}</span>
+            {% endif %}
+          </td>
           <td>{{ m.date_joined|date:"d M Y" }}</td>
+          <td>
+            {% if can_manage and m.user_id != request.user.id %}
+            <form method="post" action="{% url 'tenancy:member_remove' m.pk %}" data-confirm="Remove {{ m.user.get_full_name|default:m.user.email }} from this organisation?">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-secondary" type="submit">Remove</button>
+            </form>
+            {% endif %}
+          </td>
         </tr>
       {% empty %}
-        <tr><td colspan="4" class="text-muted">No members yet.</td></tr>
+        <tr><td colspan="5" class="text-muted">No members yet.</td></tr>
       {% endfor %}
       </tbody>
     </table>
@@ -36,7 +57,7 @@
 <div class="card">
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th>Email</th><th>Role</th><th>Invited</th><th></th></tr></thead>
+      <thead><tr><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Invited</th><th scope="col"></th></tr></thead>
       <tbody>
       {% for invite in invites %}
         <tr>

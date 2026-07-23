@@ -5,7 +5,7 @@
 {% block report_actions %}<a class="btn btn-secondary" href="?format=xlsx">Export Excel</a>{% endblock %}
 {% block report_content %}
 <table class="data-table">
-  <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Inherent</th><th>Owner</th><th>Treatment</th><th>Status</th></tr></thead>
+  <thead><tr><th scope="col">ID</th><th scope="col">Title</th><th scope="col">Category</th><th scope="col">Inherent</th><th scope="col">Owner</th><th scope="col">Treatment</th><th scope="col">Status</th></tr></thead>
   <tbody>
   {% for r in risks %}
     <tr>

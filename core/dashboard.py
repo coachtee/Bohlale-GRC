@@ -30,12 +30,18 @@ def _adopted_frameworks(organisation):
 
 
 def _primary_journey(organisation):
-    return (
-        OrganisationJourney.objects.filter(organisation=organisation, status="in_progress")
-        .select_related("template", "current_step")
-        .order_by("-started_at")
-        .first()
+    # Prefer an in-progress journey (the common case — most visits are
+    # mid-implementation); fall back to the most recently completed one
+    # so a user who has actually finished their journey sees a
+    # completion state rather than the dashboard reverting to looking
+    # like nothing was ever started.
+    base = OrganisationJourney.objects.filter(organisation=organisation).select_related(
+        "template__framework", "current_step"
     )
+    journey = base.filter(status="in_progress").order_by("-started_at").first()
+    if journey is None:
+        journey = base.filter(status="completed").order_by("-completed_at").first()
+    return journey
 
 
 def _open_actions_breakdown(organisation):
@@ -63,15 +69,40 @@ def _open_actions_breakdown(organisation):
     }
 
 
+def _resolve_targets(approvals):
+    """
+    ApprovalRequest.target is a GenericForeignKey, which Django's ORM
+    cannot select_related — left alone, accessing `.target` on each of
+    N approvals issues N extra queries. Since approvals are typically
+    all against the same content type (Document), batch-fetch by
+    content type instead: at most one extra query per distinct content
+    type among the approvals actually being displayed, not one per row.
+    """
+    from django.contrib.contenttypes.models import ContentType
+
+    ids_by_ct = {}
+    for approval in approvals:
+        ids_by_ct.setdefault(approval.content_type_id, set()).add(approval.object_id)
+    resolved = {}
+    for ct_id, object_ids in ids_by_ct.items():
+        model_cls = ContentType.objects.get_for_id(ct_id).model_class()
+        for obj in model_cls.objects.filter(pk__in=object_ids):
+            resolved[(ct_id, str(obj.pk))] = obj
+    return resolved
+
+
 def _tasks_due_soon(request, limit=5):
     organisation = request.organisation
     tasks = []
 
-    pending_approvals = ApprovalRequest.objects.filter(organisation=organisation, status="pending").select_related(
-        "content_type"
+    pending_approvals = list(
+        ApprovalRequest.objects.filter(organisation=organisation, status="pending")
+        .select_related("content_type")
+        .order_by("-created_at")[:limit]
     )
+    targets = _resolve_targets(pending_approvals)
     for approval in pending_approvals:
-        target = approval.target
+        target = targets.get((approval.content_type_id, str(approval.object_id)))
         tasks.append({
             "title": f"Review {target}" if target else "Review approval request",
             "meta": "Approval",

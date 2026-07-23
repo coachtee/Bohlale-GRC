@@ -69,7 +69,7 @@ class VerifyCloseTests(TestCase):
     def setUp(self):
         self.org = Organisation.objects.create(name="NIBS")
         self.user = User.objects.create_user(email="a@example.com", password="StrongPass123!")
-        Membership.objects.create(organisation=self.org, user=self.user, role="compliance_manager")
+        Membership.objects.create(organisation=self.org, user=self.user, role="org_admin")
         self.client.login(email="a@example.com", password="StrongPass123!")
         self.action = CorrectiveAction.objects.create(organisation=self.org, finding_description="x", status="verification")
 
@@ -82,6 +82,38 @@ class VerifyCloseTests(TestCase):
         self.assertEqual(self.action.status, "closed")
         self.assertEqual(self.action.verified_by, self.user)
         self.assertIsNotNone(self.action.closed_at)
+
+
+class VerifyCloseRBACTests(TestCase):
+    """Closing a corrective action is an independent-verification
+    sign-off (spec §31) and requires an Approver-level role — an
+    Editor-level role (e.g. compliance_manager, the action's own owner)
+    must not be able to close it, either via the dedicated verify/close
+    view or by bypassing it through the plain edit form."""
+
+    def setUp(self):
+        self.org = Organisation.objects.create(name="NIBS")
+        self.editor = User.objects.create_user(email="editor@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=self.editor, role="compliance_manager")
+        self.client.login(email="editor@example.com", password="StrongPass123!")
+        self.action = CorrectiveAction.objects.create(organisation=self.org, finding_description="x", status="verification")
+
+    def test_editor_cannot_verify_close(self):
+        response = self.client.post(
+            reverse("actions:verify_close", args=[self.action.pk]), {"verification_notes": "Confirmed fixed"}
+        )
+        self.assertEqual(response.status_code, 403)
+        self.action.refresh_from_db()
+        self.assertEqual(self.action.status, "verification")
+
+    def test_editor_cannot_close_via_plain_edit_form(self):
+        response = self.client.post(
+            reverse("actions:edit", args=[self.action.pk]),
+            {"source": "other", "finding_description": "x", "status": "closed", "severity": "medium"},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.action.refresh_from_db()
+        self.assertEqual(self.action.status, "verification")
 
 
 class CorrectiveActionTenantIsolationTests(TestCase):

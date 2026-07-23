@@ -9,8 +9,10 @@ urlpatterns = [
     path("new/", views.document_create, name="create"),
     path("generate/<uuid:step_id>/", views.generate_for_step, name="generate_for_step"),
     path("<uuid:pk>/", views.document_detail, name="detail"),
+    path("<uuid:pk>/download/", views.document_download, name="download"),
     path("<uuid:pk>/edit/", views.document_edit, name="edit"),
     path("<uuid:pk>/submit-review/", views.document_submit_review, name="submit_review"),
     path("<uuid:pk>/submit-approval/", views.document_submit_approval, name="submit_approval"),
     path("<uuid:pk>/publish/", views.document_publish, name="publish"),
+    path("<uuid:pk>/archive/", views.document_archive, name="archive"),
 ]

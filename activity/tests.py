@@ -1,4 +1,5 @@
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 
 from accounts.models import User
 from tenancy.models import Membership, Organisation
@@ -37,3 +38,22 @@ class LogActivityTests(TestCase):
         self.assertFalse(model_admin.has_add_permission(None))
         self.assertFalse(model_admin.has_change_permission(None))
         self.assertFalse(model_admin.has_delete_permission(None))
+
+
+class ActivityFeedTenantIsolationTests(TestCase):
+    """A GRC platform's audit trail is itself sensitive (spec §9/§45) —
+    Org A must never see Org B's activity feed entries."""
+
+    def setUp(self):
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.user_a = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.user_a, role="org_admin")
+        log_activity(None, action="created", description="Org B secret action", organisation=self.org_b)
+        log_activity(None, action="created", description="Org A visible action", organisation=self.org_a)
+        self.client.login(email="a@example.com", password="StrongPass123!")
+
+    def test_activity_feed_excludes_other_organisations(self):
+        response = self.client.get(reverse("activity:feed"))
+        self.assertContains(response, "Org A visible action")
+        self.assertNotContains(response, "Org B secret action")

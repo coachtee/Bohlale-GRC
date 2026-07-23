@@ -4,14 +4,15 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 
 from activity.utils import log_activity
-from core.permissions import can_approve, get_object_or_404_scoped, require_editor, require_organisation
+from core.permissions import can_administer, can_approve, get_object_or_404_scoped, require_editor, require_organisation
+from core.protected_media import serve_tenant_file
 from notifications.utils import notify
 from tenancy.constants import APPROVER_ROLES
 from tenancy.models import Membership
 
 from .forms import DocumentContentForm, DocumentForm
 from .models import STATUS_APPROVED, STATUS_DRAFT, STATUS_PUBLISHED, Document
-from .services import generate_draft_for_step, publish, start_revision, submit_for_approval, submit_for_review
+from .services import archive, generate_draft_for_step, publish, start_revision, submit_for_approval, submit_for_review
 
 
 @require_organisation
@@ -62,13 +63,24 @@ def document_detail(request, pk):
     return render(
         request,
         "documents/detail.html",
-        {"document": document, "versions": versions, "can_sign": can_sign, "pending_approval": pending_approval},
+        {
+            "document": document, "versions": versions, "can_sign": can_sign,
+            "pending_approval": pending_approval, "can_administer": can_administer(request),
+        },
     )
+
+
+@require_organisation
+def document_download(request, pk):
+    document = get_object_or_404_scoped(Document.objects, request, pk=pk)
+    return serve_tenant_file(document, "attachment")
 
 
 @require_editor
 def document_edit(request, pk):
     document = get_object_or_404_scoped(Document.objects, request, pk=pk)
+    if document.status == "archived":
+        raise PermissionDenied("An archived document cannot be edited. Retained for audit history only.")
     if document.status == STATUS_PUBLISHED:
         start_revision(document, request.user)
         messages.info(
@@ -136,6 +148,18 @@ def document_publish(request, pk):
                 mark_step_complete(journey, document.journey_step, request.user)
         log_activity(request, "published", target=document, description=f"Published: {document.title} v{document.version_label}")
         messages.success(request, f"'{document.title}' has been published as v{document.version_label}.")
+    return redirect("documents:detail", pk=document.pk)
+
+
+@require_editor
+def document_archive(request, pk):
+    document = get_object_or_404_scoped(Document.objects, request, pk=pk)
+    if not can_administer(request):
+        raise PermissionDenied("Only an Organisation Administrator or Consultant may archive a document.")
+    if request.method == "POST" and document.status in (STATUS_PUBLISHED, STATUS_APPROVED):
+        archive(document, request.user)
+        log_activity(request, "archived", target=document, description=f"Archived: {document.title}")
+        messages.success(request, f"'{document.title}' has been archived.")
     return redirect("documents:detail", pk=document.pk)
 
 

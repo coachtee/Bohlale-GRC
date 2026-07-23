@@ -48,10 +48,6 @@ class Control(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} {self.name}"
 
-    def save(self, *args, **kwargs):
-        self.assign_reference_code()
-        super().save(*args, **kwargs)
-
 
 class ControlTest(TenantScopedModel):
     control = models.ForeignKey(Control, on_delete=models.CASCADE, related_name="tests")

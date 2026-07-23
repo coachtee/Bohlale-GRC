@@ -21,8 +21,10 @@
 
   --color-green: #16a34a;
   --color-green-bg: #f0fdf4;
+  --color-green-text: #15803d;
   --color-amber: #d97706;
   --color-amber-bg: #fffbeb;
+  --color-amber-text: #b45309;
   --color-red: #dc2626;
   --color-red-bg: #fef2f2;
   --color-grey-status: #71717a;
@@ -35,7 +37,7 @@
   --border-default: var(--color-grey-200);
   --text-primary: var(--color-black);
   --text-secondary: var(--color-grey-600);
-  --text-muted: var(--color-grey-400);
+  --text-muted: var(--color-grey-500);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -57,9 +59,11 @@
   --border-default: #2c2c31;
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-muted: #86868f;
   --color-green-bg: #0f2417;
+  --color-green-text: #16a34a;
   --color-amber-bg: #2b2007;
+  --color-amber-text: #d97706;
   --color-red-bg: #2a1212;
   --color-grey-status-bg: #232327;
   --color-blue-bg: #0d1f37;
@@ -72,9 +76,11 @@
     --border-default: #2c2c31;
     --text-primary: #f4f4f5;
     --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
+    --text-muted: #86868f;
     --color-green-bg: #0f2417;
+    --color-green-text: #16a34a;
     --color-amber-bg: #2b2007;
+    --color-amber-text: #d97706;
     --color-red-bg: #2a1212;
     --color-grey-status-bg: #232327;
     --color-blue-bg: #0d1f37;
@@ -361,8 +367,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   white-space: nowrap;
 }
 .badge-dotcolor { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.badge-green { background: var(--color-green-bg); color: var(--color-green); }
-.badge-amber { background: var(--color-amber-bg); color: var(--color-amber); }
+.badge-green { background: var(--color-green-bg); color: var(--color-green-text); }
+.badge-amber { background: var(--color-amber-bg); color: var(--color-amber-text); }
 .badge-red { background: var(--color-red-bg); color: var(--color-red); }
 .badge-grey { background: var(--color-grey-status-bg); color: var(--color-grey-status); }
 .badge-blue { background: var(--color-blue-bg); color: var(--color-blue); }
@@ -461,11 +467,31 @@ ul { margin: 0; padding: 0; list-style: none; }
   font-family: inherit;
   font-size: 0.87rem;
 }
-.form-input:focus, .form-select:focus, .form-textarea:focus, input:focus, select:focus, textarea:focus {
-  outline: none; border-color: var(--color-black);
+.form-input:focus, .form-select:focus, .form-textarea:focus,
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,
+input[type="date"]:focus, input[type="number"]:focus, input[type="search"]:focus,
+input[type="url"]:focus, input[type="tel"]:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-black);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
 }
 .form-textarea, textarea { resize: vertical; min-height: 90px; }
 .checkbox-input { width: auto; margin-right: 6px; }
+/* Checkboxes/radios keep the browser's native focus outline (removed
+   above only for text-style inputs) — a border-colour change alone
+   isn't a meaningful focus indicator on a checkbox. */
+.checkbox-input:focus-visible { outline: 2px solid var(--color-black); outline-offset: 2px; }
+
+/* A visible, on-brand keyboard-focus indicator for every other
+   interactive element (buttons, links, nav items) — without this,
+   many browsers still show *something* by default, but not
+   consistently enough to rely on (WCAG 2.4.11/2.4.13). Deliberately
+   :focus-visible (not :focus), so mouse clicks don't get a ring. */
+a:focus-visible, button:focus-visible, .btn:focus-visible, .nav-link:focus-visible,
+.icon-btn:focus-visible, .card-link:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
 .form-help { font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; }
 .form-errors { color: var(--color-red); font-size: 0.78rem; margin-top: 4px; }
 .form-actions { display: flex; gap: 10px; margin-top: 20px; }
@@ -495,6 +521,53 @@ table.data-table tbody tr:hover { background: var(--color-grey-50); }
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
 .empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.5; }
 
+/* --------------------------------------------------- Bohlale identity */
+/* Sparingly used brand moments (spec §19): the infinity mark for
+   onboarding/completion, and a small block-stack loader for AI/async
+   waits — never a general-purpose decoration. Monochrome, matching the
+   rest of the design system; no colour or motion beyond a slow, calm
+   pulse/fade. */
+
+.completion-panel {
+  text-align: center;
+  padding: 32px 20px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.completion-panel .bohlale-mark-hero {
+  width: 44px; height: 44px;
+  margin: 0 auto 14px;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+.completion-panel h3 { margin-bottom: 4px; }
+.completion-panel p { color: var(--text-secondary); font-size: 0.88rem; max-width: 440px; margin: 0 auto; }
+
+.bohlale-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+.bohlale-loader span {
+  width: 6px; height: 6px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+  animation: bohlale-loader-pulse 1.1s ease-in-out infinite;
+}
+.bohlale-loader span:nth-child(2) { animation-delay: 0.15s; }
+.bohlale-loader span:nth-child(3) { animation-delay: 0.3s; }
+.bohlale-loader span:nth-child(4) { animation-delay: 0.45s; }
+@keyframes bohlale-loader-pulse {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bohlale-loader span { animation: none; opacity: 0.7; }
+}
+
 /* ------------------------------------------------------------- Utility */
 
 .flex { display: flex; }
@@ -513,9 +586,9 @@ table.data-table tbody tr:hover { background: var(--color-grey-50); }
   padding: 11px 16px; border-radius: var(--radius-md);
   font-size: 0.85rem; border: 1px solid var(--border-default);
 }
-.message.success { background: var(--color-green-bg); color: var(--color-green); border-color: transparent; }
+.message.success { background: var(--color-green-bg); color: var(--color-green-text); border-color: transparent; }
 .message.error { background: var(--color-red-bg); color: var(--color-red); border-color: transparent; }
-.message.warning, .message.info { background: var(--color-amber-bg); color: var(--color-amber); border-color: transparent; }
+.message.warning, .message.info { background: var(--color-amber-bg); color: var(--color-amber-text); border-color: transparent; }
 
 .pill-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
 

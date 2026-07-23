@@ -73,3 +73,55 @@ class EvidenceTenantIsolationTests(TestCase):
         response = self.client.get(reverse("evidence:list"))
         self.assertContains(response, "Org A evidence")
         self.assertNotContains(response, "Org B secret evidence")
+
+    def test_org_a_cannot_download_org_b_evidence_file(self):
+        self.evidence_b.file = SimpleUploadedFile("secret.pdf", b"org-b-confidential")
+        self.evidence_b.save()
+        response = self.client.get(reverse("evidence:download", args=[self.evidence_b.pk]))
+        self.assertEqual(response.status_code, 404)
+
+
+class EvidenceDownloadTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(name="Org A")
+        self.user = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=self.user, role="org_admin")
+        self.evidence = Evidence.objects.create(
+            organisation=self.org, name="Cert", file=SimpleUploadedFile("cert.pdf", b"cert-bytes")
+        )
+        self.client.login(email="a@example.com", password="StrongPass123!")
+
+    def test_same_org_member_can_download(self):
+        response = self.client.get(reverse("evidence:download", args=[self.evidence.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b"".join(response.streaming_content), b"cert-bytes")
+
+    def test_download_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("evidence:download", args=[self.evidence.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response.url)
+
+    def test_download_404s_when_no_file(self):
+        empty = Evidence.objects.create(organisation=self.org, name="No file")
+        response = self.client.get(reverse("evidence:download", args=[empty.pk]))
+        self.assertEqual(response.status_code, 404)
+
+
+class EvidenceFormIDORTests(TestCase):
+    def setUp(self):
+        from frameworks.models import Framework, Requirement
+
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.user_a = User.objects.create_user(email="a2@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.user_a, role="control_owner")
+        framework_b = Framework.objects.create(name="Org B Private Framework", code="ORGB", organisation=self.org_b)
+        self.requirement_b = Requirement.objects.create(framework=framework_b, title="Org B secret requirement")
+        self.client.login(email="a2@example.com", password="StrongPass123!")
+
+    def test_form_queryset_excludes_other_orgs_private_requirement(self):
+        from .forms import EvidenceForm
+
+        form = EvidenceForm(organisation=self.org_a)
+        self.assertNotIn(self.requirement_b, form.fields["related_requirements"].queryset)

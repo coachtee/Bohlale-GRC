@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 
 from activity.utils import log_activity
 from core.base_views import TenantCreateView, TenantDeleteView, TenantDetailView, TenantListView, TenantUpdateView
-from core.permissions import get_object_or_404_scoped, require_editor
+from core.permissions import can_approve, get_object_or_404_scoped, require_approver, require_editor
 
 from .forms import CorrectiveActionForm
 from .models import STATUS_CLOSED, CorrectiveAction
@@ -16,6 +17,9 @@ class CorrectiveActionListView(TenantListView):
     model = CorrectiveAction
     template_name = "actions/list.html"
     context_object_name = "actions"
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("owner")
 
 
 class CorrectiveActionDetailView(TenantDetailView):
@@ -44,7 +48,18 @@ class CorrectiveActionUpdateView(TenantUpdateView):
         return reverse_lazy("actions:detail", args=[self.object.pk])
 
     def form_valid(self, form):
-        if form.instance.status == STATUS_CLOSED and not form.instance.closed_at:
+        closing_now = form.instance.status == STATUS_CLOSED and not form.instance.closed_at
+        if closing_now:
+            # Closing a corrective action is an independent-verification
+            # sign-off (spec §31), not a routine edit — require Approver
+            # level even though the plain edit form is otherwise open to
+            # any Editor-level role. Use the dedicated `action_verify_close`
+            # view for the normal closure flow; this only guards against
+            # bypassing it via this form.
+            if not can_approve(self.request):
+                raise PermissionDenied(
+                    "Only an Executive/Approver, Organisation Administrator or Consultant may close a corrective action."
+                )
             form.instance.closed_at = timezone.now()
             form.instance.verified_by = self.request.user
         return super().form_valid(form)
@@ -110,7 +125,7 @@ def create_from_review(request, pk):
     return _create_from_source(request, "management_review", ManagementReview, pk, description_attr="decisions")
 
 
-@require_editor
+@require_approver
 def action_verify_close(request, pk):
     action = get_object_or_404_scoped(CorrectiveAction.objects, request, pk=pk)
     if request.method == "POST":

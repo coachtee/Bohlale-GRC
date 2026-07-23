@@ -1,15 +1,26 @@
 from django.urls import reverse_lazy
 
 from core.base_views import TenantCreateView, TenantDeleteView, TenantDetailView, TenantListView, TenantUpdateView
+from core.permissions import get_object_or_404_scoped, require_organisation
+from core.protected_media import serve_tenant_file
 
 from .forms import EvidenceForm
 from .models import Evidence
+
+
+@require_organisation
+def evidence_download(request, pk):
+    evidence = get_object_or_404_scoped(Evidence.objects, request, pk=pk)
+    return serve_tenant_file(evidence, "file")
 
 
 class EvidenceListView(TenantListView):
     model = Evidence
     template_name = "evidence/list.html"
     context_object_name = "evidence_items"
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("owner")
 
 
 class EvidenceDetailView(TenantDetailView):

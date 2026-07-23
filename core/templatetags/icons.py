@@ -54,6 +54,10 @@ _ICONS = {
     "download": '<path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
     "link": '<path d="M9 17H7a5 5 0 0 1 0-10h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><path d="M8 12h8"/>',
     "shield-check": '<path d="M12 3l8 3v6c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V6Z"/><path d="m9 12 2 2 4-4"/>',
+    # The Bohlale mark: an infinity loop, in the same minimal stroke
+    # style as every other icon here — used sparingly (spec §19) for
+    # onboarding/completion moments, not as a general-purpose icon.
+    "bohlale_mark": '<path d="M18.2 8.5c-2.9 0-4.7 2-6.2 3.9C10.5 10.5 8.7 8.5 5.8 8.5 3.7 8.5 2 10.3 2 12.5s1.7 4 3.8 4c2.9 0 4.7-2 6.2-3.9 1.5 1.9 3.3 3.9 6.2 3.9 2.1 0 3.8-1.8 3.8-4s-1.7-4-3.8-4Z"/>',
 }
 
 

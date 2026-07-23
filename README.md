@@ -54,6 +54,27 @@ AI features are provider-independent (`ai/` app). A `MockProvider` is enabled by
 
 See `DEPLOYMENT.md` for the full VPS deployment guide (Nginx + Gunicorn + PostgreSQL, no Docker).
 
+## Production readiness & security
+
+This codebase has been through a dedicated production-readiness and
+security-hardening pass (branch `claude/production-readiness-v1`), on top
+of the feature-complete build. Start here before deploying:
+
+- **`PRODUCTION_READINESS.md`** — the release gate: a category-by-category
+  PASS / PASS WITH CAVEAT / FAIL / BLOCKED assessment (tests, tenant
+  isolation, RBAC, security, backups, performance, accessibility, and
+  more), plus the exact external actions (real secrets, domain/TLS,
+  production database) a deploying operator must still complete.
+- **`SECURITY_AUDIT.md`** — every security finding from that pass,
+  classified CRITICAL/HIGH/MEDIUM/LOW/INFORMATIONAL with reproduction
+  steps, remediation, and regression-test status.
+- **`BACKUP_RESTORE.md`** — a PostgreSQL backup/restore procedure that was
+  actually executed and verified in this repository, not just documented.
+- **`POPIA_READINESS.md`** — what the software does and does not do for
+  POPIA compliance (software alone cannot make an organisation compliant).
+- **`UAT_PLAN.md`** / **`UAT_RESULTS.md`** — the full NIBS end-to-end
+  acceptance scenario and its results.
+
 ## Demonstration data
 
 The `seed_nibs_demo` management command creates a fictional demonstration tenant, **NIBS (Naleli Innovators Business School)**, and walks it through the ISO 27001 implementation journey described in the spec (§47). All data is fictional/sample data — no real client, employee or operational information is used anywhere in this repository.

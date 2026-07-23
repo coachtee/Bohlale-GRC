@@ -13,7 +13,7 @@
         {% else %}
           {{ field }}
         {% endif %}
-        {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+        {% if field.help_text %}<div class="form-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>{% endif %}
         {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
       </div>
     {% endfor %}

@@ -4,10 +4,15 @@ URL configuration for the Bohlale GRC project.
 Each business module owns its own `urls.py` (namespaced by app_label)
 and is included here under a URL prefix that matches the primary
 sidebar navigation (see templates/core/_sidebar.html).
+
+Note: MEDIA_ROOT is deliberately NOT served directly here (not even in
+DEBUG) — every uploaded file that carries real tenant content (evidence,
+document/review attachments) is downloaded through a tenant-and-RBAC
+-checked view instead (see core/protected_media.py and each app's
+`download` URL), never through a raw filesystem path. See
+BOHLALE_GRC_MASTER_SPEC.md §45 / SECURITY_AUDIT.md.
 """
 
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
@@ -37,9 +42,6 @@ urlpatterns = [
     path("reports/", include("reports.urls")),
     path("", include("core.urls")),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler403 = "core.error_views.error_403"
 handler404 = "core.error_views.error_404"

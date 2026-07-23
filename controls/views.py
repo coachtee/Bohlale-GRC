@@ -19,6 +19,9 @@ class ControlListView(TenantListView):
     template_name = "controls/list.html"
     context_object_name = "controls"
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("owner").prefetch_related("framework_requirements__framework")
+
 
 class ControlDetailView(TenantDetailView):
     model = Control

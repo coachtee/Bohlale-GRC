@@ -106,3 +106,99 @@ class OrganisationOnboardingTests(TestCase):
         org = Organisation.objects.get(name="NIBS")
         membership = Membership.objects.get(organisation=org, user=user)
         self.assertEqual(membership.role, "org_admin")
+
+
+class MemberManagementTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(name="NIBS")
+        self.admin = User.objects.create_user(email="admin@example.com", password="StrongPass123!")
+        self.member = User.objects.create_user(email="member@example.com", password="StrongPass123!")
+        self.admin_membership = Membership.objects.create(organisation=self.org, user=self.admin, role="org_admin")
+        self.member_membership = Membership.objects.create(organisation=self.org, user=self.member, role="contributor")
+        self.client.login(email="admin@example.com", password="StrongPass123!")
+
+    def test_admin_can_change_member_role(self):
+        response = self.client.post(
+            reverse("tenancy:member_update_role", args=[self.member_membership.pk]), {"role": "risk_owner"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.member_membership.refresh_from_db()
+        self.assertEqual(self.member_membership.role, "risk_owner")
+
+    def test_admin_can_remove_member(self):
+        response = self.client.post(reverse("tenancy:member_remove", args=[self.member_membership.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.member_membership.refresh_from_db()
+        self.assertFalse(self.member_membership.is_active)
+
+    def test_non_admin_cannot_change_roles(self):
+        self.client.logout()
+        self.client.login(email="member@example.com", password="StrongPass123!")
+        response = self.client.post(
+            reverse("tenancy:member_update_role", args=[self.admin_membership.pk]), {"role": "read_only"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_admin_cannot_remove_members(self):
+        self.client.logout()
+        self.client.login(email="member@example.com", password="StrongPass123!")
+        response = self.client.post(reverse("tenancy:member_remove", args=[self.admin_membership.pk]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_cannot_demote_the_last_admin(self):
+        response = self.client.post(
+            reverse("tenancy:member_update_role", args=[self.admin_membership.pk]), {"role": "contributor"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.admin_membership.refresh_from_db()
+        self.assertEqual(self.admin_membership.role, "org_admin")
+
+    def test_cannot_remove_the_last_admin(self):
+        response = self.client.post(reverse("tenancy:member_remove", args=[self.admin_membership.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.admin_membership.refresh_from_db()
+        self.assertTrue(self.admin_membership.is_active)
+
+    def test_cannot_remove_own_membership(self):
+        # Add a second admin first so the last-admin guard (tested
+        # separately above) can't mask the self-removal guard.
+        Membership.objects.create(
+            organisation=self.org,
+            user=User.objects.create_user(email="admin2@example.com", password="StrongPass123!"),
+            role="org_admin",
+        )
+        response = self.client.post(reverse("tenancy:member_remove", args=[self.admin_membership.pk]))
+        self.admin_membership.refresh_from_db()
+        self.assertTrue(self.admin_membership.is_active)
+
+    def test_removed_member_loses_access(self):
+        self.client.post(reverse("tenancy:member_remove", args=[self.member_membership.pk]))
+        self.client.logout()
+        self.client.login(email="member@example.com", password="StrongPass123!")
+        response = self.client.get(reverse("core:dashboard"))
+        self.assertRedirects(response, reverse("tenancy:organisation_list"))
+
+
+class MemberManagementTenantIsolationTests(TestCase):
+    def setUp(self):
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.admin_a = User.objects.create_user(email="admin_a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.admin_a, role="org_admin")
+        user_b = User.objects.create_user(email="user_b@example.com", password="StrongPass123!")
+        self.membership_b = Membership.objects.create(organisation=self.org_b, user=user_b, role="contributor")
+        self.client.login(email="admin_a@example.com", password="StrongPass123!")
+
+    def test_org_a_admin_cannot_change_org_b_members_role(self):
+        response = self.client.post(
+            reverse("tenancy:member_update_role", args=[self.membership_b.pk]), {"role": "org_admin"}
+        )
+        self.assertEqual(response.status_code, 404)
+        self.membership_b.refresh_from_db()
+        self.assertEqual(self.membership_b.role, "contributor")
+
+    def test_org_a_admin_cannot_remove_org_b_member(self):
+        response = self.client.post(reverse("tenancy:member_remove", args=[self.membership_b.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.membership_b.refresh_from_db()
+        self.assertTrue(self.membership_b.is_active)

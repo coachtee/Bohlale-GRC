@@ -53,4 +53,9 @@ class AuditFindingForm(TenantModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.organisation is not None:
+            from django.db.models import Q
+
             self.fields["control"].queryset = self.fields["control"].queryset.filter(organisation=self.organisation)
+            self.fields["requirement"].queryset = self.fields["requirement"].queryset.filter(
+                Q(framework__organisation__isnull=True) | Q(framework__organisation=self.organisation)
+            )

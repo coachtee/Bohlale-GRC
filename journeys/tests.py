@@ -72,6 +72,36 @@ class StartJourneyTests(TestCase):
         self.assertEqual(journey.status, "completed")
         self.assertIsNone(journey.current_step)
 
+    def test_completed_journey_page_shows_completion_state_not_step_one(self):
+        # Regression: journey_home previously fell back to
+        # `journey.template.steps.first()` whenever current_step was
+        # None, which only happens once every step is complete — so a
+        # finished journey misleadingly kept showing step 1 as the
+        # "current step" with a Completed badge instead of a genuine
+        # completion state.
+        journey = start_journey(self.org, self.template, self.user)
+        for step in self.template.steps.all():
+            mark_step_complete(journey, step, self.user)
+        self.client.login(email="a@example.com", password="StrongPass123!")
+        response = self.client.get(reverse("journeys:journey_home"))
+        self.assertIsNone(response.context["focus_step"])
+        self.assertContains(response, "Journey complete")
+        self.assertNotContains(response, "CURRENT STEP")
+
+    def test_completed_journey_still_appears_on_dashboard(self):
+        # Regression: core.dashboard._primary_journey only looked for
+        # status="in_progress", so a fully-completed journey (status
+        # becomes "completed") disappeared from the dashboard entirely,
+        # making it look like nothing had ever been started.
+        journey = start_journey(self.org, self.template, self.user)
+        for step in self.template.steps.all():
+            mark_step_complete(journey, step, self.user)
+        self.client.login(email="a@example.com", password="StrongPass123!")
+        response = self.client.get(reverse("core:dashboard"))
+        self.assertEqual(response.context["journey"], journey)
+        self.assertContains(response, "100%")
+        self.assertNotContains(response, "No guided journey started yet")
+
 
 class OnboardingFlowTests(TestCase):
     def setUp(self):
@@ -186,4 +216,45 @@ class InformationRequestTests(TestCase):
         )
         self.client.logout()
         response = self.client.get(reverse("journeys:information_request_respond", args=[info_request.token]))
+        self.assertEqual(response.status_code, 200)
+
+
+class JourneyTenantIsolationTests(TestCase):
+    def setUp(self):
+        _seed()
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.user_a = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.user_a, role="org_admin")
+
+        framework = Framework.objects.get(code="ISO27001")
+        template = get_or_build_template(framework, "build_from_scratch")
+        self.journey_b = start_journey(self.org_b, template, self.user_a)
+
+        self.client.login(email="a@example.com", password="StrongPass123!")
+
+    def test_org_a_cannot_view_org_b_journey_via_query_param(self):
+        response = self.client.get(reverse("journeys:journey_home"), {"journey": str(self.journey_b.pk)})
+        # Org A has no journey of its own, so passing Org B's journey pk
+        # as a query param must not resolve to it — falls back to "no
+        # journey started" rather than leaking Org B's journey.
+        self.assertNotEqual(response.context.get("journey"), self.journey_b)
+
+    def test_org_a_cannot_access_org_b_interview_session(self):
+        from .models import InterviewSession
+
+        step = self.journey_b.template.steps.first()
+        interview_session = InterviewSession.objects.create(
+            organisation=self.org_b, step=step, started_by=self.user_a,
+        )
+        response = self.client.get(reverse("journeys:interview_session", args=[interview_session.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_org_a_information_request_list_excludes_org_b(self):
+        InformationRequest.objects.create(
+            organisation=self.org_b, requested_by=self.user_a, assigned_email="it@example.com",
+            question_text="Org B secret question",
+        )
+        response = self.client.get(reverse("journeys:information_request_list"))
+        self.assertNotContains(response, "Org B secret question")
         self.assertNotContains(response, "<form")

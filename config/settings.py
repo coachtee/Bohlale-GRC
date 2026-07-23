@@ -30,25 +30,46 @@ def env_list(name, default=""):
 
 # --- Core / security -------------------------------------------------
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-dev-only-key-change-in-production-4f8c2e9a1b3d",
-)
+_INSECURE_DEFAULT_SECRET_KEY = "django-insecure-dev-only-key-change-in-production-4f8c2e9a1b3d"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_DEFAULT_SECRET_KEY)
 
 DEBUG = env_bool("DJANGO_DEBUG", default=True)
+
+if not DEBUG and SECRET_KEY == _INSECURE_DEFAULT_SECRET_KEY:
+    # Refuse to boot in production with the checked-in dev key rather
+    # than silently running with a well-known, guessable SECRET_KEY
+    # (spec §45: "environment-based secrets"). Generate a real one with:
+    #   python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY is not set (or still the insecure dev default) while "
+        "DJANGO_DEBUG=False. Set a real, random DJANGO_SECRET_KEY in the "
+        "environment before running with DEBUG off. See DEPLOYMENT.md."
+    )
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")
+
+# DEPLOYMENT.md's documented topology terminates TLS at Nginx and proxies
+# to Gunicorn over a filesystem Unix socket (never a TCP port reachable
+# from outside the box), so Nginx is the only process that can set this
+# header — trusting it here is safe under that topology and is required:
+# without it, request.is_secure() is always False behind the proxy, and
+# DJANGO_SECURE_SSL_REDIRECT=True would redirect-loop forever once HTTPS
+# is enabled (step 8). Do not change this to trust a TCP-exposed Gunicorn.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", default=False)
 SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", default=False)
 CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", default=False)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False  # HTMX needs to read the CSRF cookie from JS
+SESSION_COOKIE_AGE = int(os.environ.get("DJANGO_SESSION_COOKIE_AGE", 60 * 60 * 24 * 7))  # 7 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env_bool("DJANGO_SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False)
 X_FRAME_OPTIONS = "DENY"
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
 
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
@@ -108,6 +129,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
     "tenancy.middleware.TenantMiddleware",
     "activity.middleware.CurrentUserMiddleware",
 ]
@@ -238,19 +260,35 @@ AI_API_KEY = os.environ.get("AI_API_KEY", "")
 AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
 
 
-# --- Logging -----------------------------------------------------------
+# --- Logging -------------------------------------------------------------
+# Deliberately console-only (stdout/stderr), not a file handler with its
+# own rotation: the documented production setup (DEPLOYMENT.md) runs
+# under systemd, which already captures stdout/stderr into the journal
+# with its own rotation/retention (`journalctl -u bohlale-grc`) — adding
+# a second, independently-rotated log file would just be a second
+# thing to keep in sync with no real benefit for a single-VPS deployment.
+# Never logs request bodies, passwords, or the AI_API_KEY — see
+# SECURITY_AUDIT.md for what was checked here.
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "structured": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
-        "console": {"class": "logging.StreamHandler"},
+        "console": {"class": "logging.StreamHandler", "formatter": "structured"},
     },
     "root": {
         "handlers": ["console"],
         "level": "WARNING",
     },
     "loggers": {
+        # django.request/django.security (4xx/5xx, PermissionDenied,
+        # SuspiciousOperation) inherit this and propagate up to it.
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "bohlale": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },

@@ -54,6 +54,12 @@ class RiskMatrixConfig(TenantScopedModel):
             models.UniqueConstraint(fields=["organisation"], name="unique_risk_matrix_per_org")
         ]
 
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+
+        super().save(*args, **kwargs)
+        cache.delete(f"risk_matrix:{self.organisation_id}")
+
     def band_for_score(self, score):
         if score <= self.very_low_max:
             return "very_low", "Very Low"
@@ -104,7 +110,6 @@ class Risk(ReferenceCodeMixin, TenantScopedModel):
         return f"{self.reference_code} {self.title}"
 
     def save(self, *args, **kwargs):
-        self.assign_reference_code()
         self.inherent_risk_score = self.likelihood * self.impact
         if self.residual_likelihood and self.residual_impact:
             self.residual_risk_score = self.residual_likelihood * self.residual_impact
@@ -113,7 +118,23 @@ class Risk(ReferenceCodeMixin, TenantScopedModel):
         super().save(*args, **kwargs)
 
     def get_matrix(self):
-        matrix, _ = RiskMatrixConfig.objects.get_or_create(organisation=self.organisation)
+        """
+        Cached for a short TTL: `inherent_band`/`residual_band` call
+        this once per risk, and without caching, rendering a 50-row
+        risk register would issue up to 50 extra `get_or_create` queries
+        for what is, within one organisation, always the same matrix.
+        Invalidated immediately on RiskMatrixConfig.save(), so admin
+        changes to the matrix take effect right away rather than after
+        the TTL — the TTL only covers the (much more common) unchanged
+        case.
+        """
+        from django.core.cache import cache
+
+        cache_key = f"risk_matrix:{self.organisation_id}"
+        matrix = cache.get(cache_key)
+        if matrix is None:
+            matrix, _ = RiskMatrixConfig.objects.get_or_create(organisation=self.organisation)
+            cache.set(cache_key, matrix, 60)
         return matrix
 
     @property
