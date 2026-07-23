@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Risk Register — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Risk Register</h1>
+    <p class="subtitle">Identified information security and business risks, with treatment status.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'risks:create' %}">{% icon 'plus' 'nav-icon' %} Add risk</a>
+</div>
+
+<div class="pill-nav">
+  <a class="btn btn-sm {% if not request.GET.status %}btn-primary{% else %}btn-secondary{% endif %}" href="?">All</a>
+  <a class="btn btn-sm {% if request.GET.status == 'open' %}btn-primary{% else %}btn-secondary{% endif %}" href="?status=open">Open</a>
+  <a class="btn btn-sm {% if request.GET.status == 'in_treatment' %}btn-primary{% else %}btn-secondary{% endif %}" href="?status=in_treatment">In Treatment</a>
+  <a class="btn btn-sm {% if request.GET.status == 'closed' %}btn-primary{% else %}btn-secondary{% endif %}" href="?status=closed">Closed</a>
+</div>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Inherent</th><th>Residual</th><th>Owner</th><th>Treatment</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for risk in risks %}
+      <tr>
+        <td>{{ risk.reference_code }}</td>
+        <td><a href="{% url 'risks:detail' risk.pk %}">{{ risk.title }}</a></td>
+        <td>{{ risk.get_category_display }}</td>
+        <td>
+          {% with band=risk.inherent_band %}
+          <span class="badge {% if band.0 == 'high' %}badge-red{% elif band.0 == 'medium' %}badge-amber{% elif band.0 == 'low' %}badge-green{% else %}badge-grey{% endif %}">{{ risk.inherent_risk_score }} · {{ band.1 }}</span>
+          {% endwith %}
+        </td>
+        <td>
+          {% if risk.residual_risk_score %}
+            {% with band=risk.residual_band %}
+            <span class="badge {% if band.0 == 'high' %}badge-red{% elif band.0 == 'medium' %}badge-amber{% elif band.0 == 'low' %}badge-green{% else %}badge-grey{% endif %}">{{ risk.residual_risk_score }} · {{ band.1 }}</span>
+            {% endwith %}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ risk.owner|default:"—" }}</td>
+        <td>{{ risk.get_treatment_display }}</td>
+        <td><span class="badge badge-outline">{{ risk.get_status_display }}</span></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-muted">No risks recorded yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
