@@ -50,6 +50,15 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")
 
+# DEPLOYMENT.md's documented topology terminates TLS at Nginx and proxies
+# to Gunicorn over a filesystem Unix socket (never a TCP port reachable
+# from outside the box), so Nginx is the only process that can set this
+# header — trusting it here is safe under that topology and is required:
+# without it, request.is_secure() is always False behind the proxy, and
+# DJANGO_SECURE_SSL_REDIRECT=True would redirect-loop forever once HTTPS
+# is enabled (step 8). Do not change this to trust a TCP-exposed Gunicorn.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", default=False)
 SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", default=False)
 CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", default=False)
