@@ -115,11 +115,15 @@
           <a class="btn btn-primary btn-sm" href="{% url 'journeys:journey_home' %}">Continue Journey {% icon 'arrow-right' 'nav-icon' %}</a>
         {% else %}
           <div class="divider"></div>
-          <p class="text-sm text-secondary">All steps complete for this journey.</p>
+          <div class="completion-panel">
+            {% icon 'bohlale_mark' 'bohlale-mark-hero' %}
+            <h3>Journey complete</h3>
+            <p>Every guided step is done. Compliance is ongoing, not a one-time project — keep reviewing risks, evidence and documents as your organisation changes.</p>
+          </div>
         {% endif %}
       {% else %}
         <div class="empty-state">
-          {% icon 'journey' %}
+          {% icon 'bohlale_mark' %}
           <p class="font-semibold mb-1">No guided journey started yet.</p>
           <a class="btn btn-primary" href="{% url 'journeys:onboarding_goal' %}">Start a guided journey</a>
         </div>

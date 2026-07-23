@@ -63,6 +63,19 @@
     });
   });
 
+  // Immediate visual feedback for a link/button that triggers a
+  // (possibly slow, e.g. AI-backed) full-page navigation, so a click
+  // doesn't feel unresponsive while the next page loads. Progressive
+  // enhancement only — the underlying navigation/submit is untouched.
+  qsa("[data-loading-label]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      el.setAttribute("aria-busy", "true");
+      el.innerHTML =
+        '<span class="bohlale-loader"><span></span><span></span><span></span><span></span></span> ' +
+        el.getAttribute("data-loading-label");
+    });
+  });
+
   // Toggle a target element's visibility by id (CSP-friendly
   // replacement for a page-local inline <script> block).
   qsa("[data-toggle-target]").forEach(function (btn) {

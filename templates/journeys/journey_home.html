@@ -68,7 +68,7 @@
         </a>
       {% endif %}
       {% if focus_step.step_type == 'document' %}
-        <a class="btn btn-secondary btn-sm w-full mb-2" href="{% safe_url 'documents:generate_for_step' focus_step.pk %}">Generate draft document</a>
+        <a class="btn btn-secondary btn-sm w-full mb-2" href="{% safe_url 'documents:generate_for_step' focus_step.pk %}" data-loading-label="Generating draft…">Generate draft document</a>
       {% endif %}
       {% if focus_step.step_type == 'risk_assessment' %}
         <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'risks:list' %}">Go to Risk Register</a>
@@ -119,6 +119,14 @@
         <p class="text-sm">{{ focus_step.completion_criteria }}</p>
       {% endif %}
     </div>
+  </div>
+  {% else %}
+  <div class="divider"></div>
+  <div class="completion-panel">
+    {% icon 'bohlale_mark' 'bohlale-mark-hero' %}
+    <h3>Journey complete</h3>
+    <p>Every guided step for {{ journey.template.name }} is done. Compliance is ongoing, not a one-time project — keep reviewing risks, evidence and documents as your organisation changes.</p>
+    <a class="btn btn-secondary btn-sm" style="margin-top:14px;" href="{% safe_url 'reports:readiness' %}">View Audit Readiness</a>
   </div>
   {% endif %}
 </div>

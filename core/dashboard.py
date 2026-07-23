@@ -30,12 +30,18 @@ def _adopted_frameworks(organisation):
 
 
 def _primary_journey(organisation):
-    return (
-        OrganisationJourney.objects.filter(organisation=organisation, status="in_progress")
-        .select_related("template__framework", "current_step")
-        .order_by("-started_at")
-        .first()
+    # Prefer an in-progress journey (the common case — most visits are
+    # mid-implementation); fall back to the most recently completed one
+    # so a user who has actually finished their journey sees a
+    # completion state rather than the dashboard reverting to looking
+    # like nothing was ever started.
+    base = OrganisationJourney.objects.filter(organisation=organisation).select_related(
+        "template__framework", "current_step"
     )
+    journey = base.filter(status="in_progress").order_by("-started_at").first()
+    if journey is None:
+        journey = base.filter(status="completed").order_by("-completed_at").first()
+    return journey
 
 
 def _open_actions_breakdown(organisation):

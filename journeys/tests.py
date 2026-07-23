@@ -72,6 +72,36 @@ class StartJourneyTests(TestCase):
         self.assertEqual(journey.status, "completed")
         self.assertIsNone(journey.current_step)
 
+    def test_completed_journey_page_shows_completion_state_not_step_one(self):
+        # Regression: journey_home previously fell back to
+        # `journey.template.steps.first()` whenever current_step was
+        # None, which only happens once every step is complete — so a
+        # finished journey misleadingly kept showing step 1 as the
+        # "current step" with a Completed badge instead of a genuine
+        # completion state.
+        journey = start_journey(self.org, self.template, self.user)
+        for step in self.template.steps.all():
+            mark_step_complete(journey, step, self.user)
+        self.client.login(email="a@example.com", password="StrongPass123!")
+        response = self.client.get(reverse("journeys:journey_home"))
+        self.assertIsNone(response.context["focus_step"])
+        self.assertContains(response, "Journey complete")
+        self.assertNotContains(response, "CURRENT STEP")
+
+    def test_completed_journey_still_appears_on_dashboard(self):
+        # Regression: core.dashboard._primary_journey only looked for
+        # status="in_progress", so a fully-completed journey (status
+        # becomes "completed") disappeared from the dashboard entirely,
+        # making it look like nothing had ever been started.
+        journey = start_journey(self.org, self.template, self.user)
+        for step in self.template.steps.all():
+            mark_step_complete(journey, step, self.user)
+        self.client.login(email="a@example.com", password="StrongPass123!")
+        response = self.client.get(reverse("core:dashboard"))
+        self.assertEqual(response.context["journey"], journey)
+        self.assertContains(response, "100%")
+        self.assertNotContains(response, "No guided journey started yet")
+
 
 class OnboardingFlowTests(TestCase):
     def setUp(self):

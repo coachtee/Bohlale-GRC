@@ -94,7 +94,12 @@ def journey_home(request):
     if step_id:
         focus_step = get_object_or_404(journey.template.steps, pk=step_id)
     else:
-        focus_step = journey.current_step or journey.template.steps.first()
+        # journey.current_step is only ever None once every step is
+        # complete (recalculate_current_step sets it to the first
+        # incomplete step, so a fresh journey already has one) — it must
+        # NOT fall back to step 1 here, or a fully-completed journey
+        # would misleadingly keep showing "CURRENT STEP: <step 1>".
+        focus_step = journey.current_step
 
     progress = None
     if focus_step:
