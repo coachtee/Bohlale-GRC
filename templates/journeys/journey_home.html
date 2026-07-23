@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load icons nav %}
+{% block title %}Journey — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Journey Implementation</h1>
+    <p class="subtitle">{{ journey.template.name }} — {{ journey.template.framework.name }}</p>
+  </div>
+  {% if journeys.count > 1 %}
+  <div class="relative">
+    <button class="btn btn-secondary" data-dropdown-toggle="journey-switch">{{ journey.template.name }} {% icon 'chevron-down' 'nav-icon' %}</button>
+    <div class="dropdown-panel" id="journey-switch">
+      {% for j in journeys %}<a class="dropdown-item" href="?journey={{ j.pk }}">{{ j.template.name }} ({{ j.progress_percent }}%)</a>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card mb-3">
+  <div class="card-title-row">
+    <h3>Implementation Stepper</h3>
+    <span class="text-sm font-semibold">{{ journey.progress_percent }}% complete</span>
+  </div>
+  <div class="stepper">
+    {% for stage in stages %}
+      <div class="stepper-step {{ stage.status }}">
+        <div class="step-circle">{% if stage.status == 'done' %}{% icon 'check' 'nav-icon' %}{% else %}{{ forloop.counter }}{% endif %}</div>
+        <div class="step-label">{{ stage.title }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if focus_step %}
+  <div class="divider"></div>
+  <div class="mb-2">
+    <span class="text-xs text-muted">CURRENT STEP</span>
+    <h3 class="mt-0">{{ focus_step.title }}</h3>
+    <p class="text-sm text-secondary">{{ focus_step.description }}</p>
+    {% if progress %}
+      {% if progress.status == 'completed' %}<span class="badge badge-green">Completed</span>
+      {% elif progress.status == 'in_progress' %}<span class="badge badge-amber">In Progress</span>
+      {% else %}<span class="badge badge-grey">Not Started</span>{% endif %}
+    {% endif %}
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>What you need to do</h3>
+      <ul class="text-sm">
+        {% if focus_step.guidance_what %}<li class="mb-1"><strong>What:</strong> {{ focus_step.guidance_what }}</li>{% endif %}
+        {% if focus_step.guidance_why %}<li class="mb-1"><strong>Why:</strong> {{ focus_step.guidance_why }}</li>{% endif %}
+        {% if focus_step.guidance_who %}<li class="mb-1"><strong>Who:</strong> {{ focus_step.guidance_who }}</li>{% endif %}
+      </ul>
+      {% if focus_step.guidance_questions %}
+        <p class="text-xs text-muted mb-1" style="margin-top:10px;">QUESTIONS TO CONSIDER</p>
+        <ul class="text-sm">{% for q in focus_step.guidance_questions %}<li class="mb-1">• {{ q }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if focus_step.guidance_evidence %}<p class="text-xs text-muted mb-1" style="margin-top:10px;">EVIDENCE TO LOOK FOR</p><p class="text-sm">{{ focus_step.guidance_evidence }}</p>{% endif %}
+    </div>
+
+    <div class="card">
+      <h3 class="flex items-center gap-2">{% icon 'sparkle' 'nav-icon' %} Actions</h3>
+      {% if focus_step.step_type == 'interview' or focus_step.step_type == 'document' %}
+        <p class="text-sm text-secondary mb-2">Answer a few guided questions and Bohlale GRC will update your Knowledge Profile.</p>
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% url 'journeys:interview_start' focus_step.pk %}?journey={{ journey.pk }}">
+          {% if interview_session %}Continue guided interview{% else %}Start guided interview{% endif %}
+        </a>
+      {% endif %}
+      {% if focus_step.step_type == 'document' %}
+        <a class="btn btn-secondary btn-sm w-full mb-2" href="{% safe_url 'documents:generate_for_step' focus_step.pk %}">Generate draft document</a>
+      {% endif %}
+      {% if focus_step.step_type == 'risk_assessment' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'risks:list' %}">Go to Risk Register</a>
+      {% endif %}
+      {% if focus_step.step_type == 'controls' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'controls:soa' %}">Go to Statement of Applicability</a>
+      {% endif %}
+      {% if focus_step.step_type == 'evidence' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'evidence:list' %}">Go to Evidence</a>
+      {% endif %}
+      {% if focus_step.step_type == 'audit' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'audits:list' %}">Go to Audits</a>
+      {% endif %}
+      {% if focus_step.step_type == 'management_review' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'reviews:list' %}">Go to Management Reviews</a>
+      {% endif %}
+      {% if focus_step.step_type == 'corrective_actions' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'actions:list' %}">Go to Corrective Actions</a>
+      {% endif %}
+      {% if focus_step.step_type == 'audit_readiness' %}
+        <a class="btn btn-primary btn-sm w-full mb-2" href="{% safe_url 'reports:readiness' %}">View Audit Readiness</a>
+      {% endif %}
+      <a class="btn btn-secondary btn-sm w-full mb-2" href="{% url 'journeys:information_request_create_for_step' focus_step.pk %}">Request information from a stakeholder</a>
+      <form method="post" action="{% url 'journeys:step_mark_complete' focus_step.pk %}?journey={{ journey.pk }}">
+        {% csrf_token %}
+        <button class="btn btn-secondary btn-sm w-full" type="submit">Mark step complete</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Progress</h3>
+      {% if interview_session %}
+        <div class="progress-row">
+          <div class="progress-row-label"><span>Questions answered</span><span>{{ interview_session.exchanges.all|length }}</span></div>
+        </div>
+      {% endif %}
+      {% if info_requests %}
+        <p class="text-xs text-muted mb-1">INFORMATION REQUESTS</p>
+        {% for ir in info_requests %}
+          <div class="list-row">
+            <div class="list-row-title text-sm">{{ ir.assigned_role_label|default:ir.assigned_email }}</div>
+            {% if ir.status == 'answered' %}<span class="badge badge-green">Answered</span>{% else %}<span class="badge badge-amber">Pending</span>{% endif %}
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% if focus_step.completion_criteria %}
+        <p class="text-xs text-muted mb-1" style="margin-top:10px;">DONE WHEN</p>
+        <p class="text-sm">{{ focus_step.completion_criteria }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>All steps</h3>
+  {% for stage in stages %}
+    {% for step in stage.steps %}
+      <div class="list-row">
+        <div class="list-row-main">
+          <span class="status-dot {% if step.pk == focus_step.pk %}amber{% else %}grey{% endif %}" style="margin-top:6px;"></span>
+          <div>
+            <div class="list-row-title"><a href="?journey={{ journey.pk }}&amp;step={{ step.pk }}">{{ step.title }}</a></div>
+            <div class="list-row-meta">{{ stage.title }}</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endfor %}
+</div>
+{% endblock %}

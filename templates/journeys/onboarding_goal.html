@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Welcome — {{ active_organisation.name }}{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Welcome to Bohlale GRC</h1>
+    <p class="subtitle">What would you like to achieve with {{ active_organisation.name }}?</p>
+  </div>
+</div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for value, label in form.fields.goal_type.choices %}
+      <label class="list-row" style="cursor:pointer;">
+        <div class="list-row-main">
+          <input type="radio" name="goal_type" value="{{ value }}" class="checkbox-input" {% if forloop.first %}checked{% endif %}>
+          <div class="list-row-title">{{ label }}</div>
+        </div>
+      </label>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Continue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

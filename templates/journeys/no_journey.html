@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Journey — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Journey Implementation</h1><p class="subtitle">A guided, step-by-step path to compliance.</p></div></div>
+<div class="card empty-state">
+  {% icon 'journey' %}
+  <p class="font-semibold mb-1">No guided journey has started yet.</p>
+  <p class="text-sm mb-3">Choose what you'd like to achieve and Bohlale GRC will build a step-by-step implementation plan.</p>
+  <a class="btn btn-primary" href="{% url 'journeys:onboarding_goal' %}">Start a guided journey</a>
+</div>
+{% endblock %}
