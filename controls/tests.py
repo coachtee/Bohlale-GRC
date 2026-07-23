@@ -101,3 +101,32 @@ class ControlTenantIsolationTests(TestCase):
     def test_org_a_cannot_view_org_b_control(self):
         response = self.client.get(reverse("controls:detail", args=[self.control_b.pk]))
         self.assertEqual(response.status_code, 404)
+
+
+class ControlFormIDORTests(TestCase):
+    def setUp(self):
+        from frameworks.models import Requirement
+
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.user_a = User.objects.create_user(email="a2@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.user_a, role="control_owner")
+        framework_b = Framework.objects.create(name="Org B Private Framework", code="ORGB2", organisation=self.org_b)
+        self.requirement_b = Requirement.objects.create(framework=framework_b, title="Org B secret requirement")
+        self.client.login(email="a2@example.com", password="StrongPass123!")
+
+    def test_form_queryset_excludes_other_orgs_private_requirement(self):
+        from .forms import ControlForm
+
+        form = ControlForm(organisation=self.org_a)
+        self.assertNotIn(self.requirement_b, form.fields["framework_requirements"].queryset)
+
+    def test_cannot_attach_other_orgs_private_requirement_via_post(self):
+        self.client.post(
+            reverse("controls:create"),
+            {"name": "New control", "implementation_status": "not_implemented", "effectiveness": "not_assessed",
+             "framework_requirements": [str(self.requirement_b.pk)]},
+        )
+        control = Control.objects.filter(name="New control").first()
+        if control is not None:
+            self.assertNotIn(self.requirement_b, control.framework_requirements.all())

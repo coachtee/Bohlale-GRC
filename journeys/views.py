@@ -58,7 +58,7 @@ def onboarding_framework(request):
     return render(request, "journeys/onboarding_framework.html", {"frameworks": frameworks, "goal": goal})
 
 
-@require_organisation
+@require_editor
 def onboarding_start(request, framework_id, goal_type):
     framework = get_object_or_404(
         Framework.objects.filter(Q(organisation__isnull=True) | Q(organisation=request.organisation)),

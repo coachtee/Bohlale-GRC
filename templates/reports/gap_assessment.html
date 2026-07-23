@@ -5,7 +5,7 @@
 {% block report_actions %}
 {% if frameworks.count > 1 %}
 <form method="get">
-  <select name="framework" class="form-select" onchange="this.form.submit()">
+  <select name="framework" class="form-select" data-autosubmit>
     {% for fw in frameworks %}<option value="{{ fw.pk }}" {% if fw.pk == framework.pk %}selected{% endif %}>{{ fw.name }}</option>{% endfor %}
   </select>
 </form>

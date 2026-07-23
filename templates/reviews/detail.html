@@ -43,6 +43,10 @@
     <div class="text-sm"><strong>Attendees:</strong> {{ review.attendees|default:"—"|linebreaksbr }}</div>
     <div class="text-sm"><strong>Approved by:</strong> {{ review.approved_by|default:"—" }}</div>
     <div class="text-sm"><strong>Inputs covered:</strong> {{ review.inputs_covered_count }}/{{ inputs|length }}</div>
+    {% if review.attachment %}
+    <div class="divider"></div>
+    <a class="btn btn-secondary btn-sm" href="{% url 'reviews:download' review.pk %}">{% icon 'download' 'nav-icon' %} Download attachment</a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

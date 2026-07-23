@@ -92,3 +92,41 @@ class RiskCrudPermissionTests(TestCase):
         self.client.login(email="r@example.com", password="StrongPass123!")
         response = self.client.get(reverse("risks:create"))
         self.assertEqual(response.status_code, 403)
+
+
+class RiskFormIDORTests(TestCase):
+    """A risk must not be linkable to another organisation's private
+    custom-framework requirements just by posting that requirement's pk
+    (spec §5: tenant isolation)."""
+
+    def setUp(self):
+        from frameworks.models import Framework, Requirement
+
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.user_a = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.user_a, role="risk_owner")
+        framework_b = Framework.objects.create(name="Org B Private Framework", code="ORGB", organisation=self.org_b)
+        self.requirement_b = Requirement.objects.create(framework=framework_b, title="Org B secret requirement")
+        self.client.login(email="a@example.com", password="StrongPass123!")
+
+    def test_form_queryset_excludes_other_orgs_private_requirement(self):
+        from .forms import RiskForm
+
+        form = RiskForm(organisation=self.org_a)
+        self.assertNotIn(self.requirement_b, form.fields["related_requirements"].queryset)
+
+    def test_cannot_attach_other_orgs_private_requirement_via_post(self):
+        self.client.post(
+            reverse("risks:create"),
+            {
+                "title": "New risk", "category": "operational", "likelihood": 3, "impact": 3,
+                "treatment": "mitigate", "status": "open", "related_requirements": [str(self.requirement_b.pk)],
+            },
+        )
+        risk = Risk.objects.filter(title="New risk").first()
+        # The form rejects the cross-tenant requirement pk as an invalid
+        # choice, so the risk either isn't created at all, or is created
+        # without the other org's requirement attached — never with it.
+        if risk is not None:
+            self.assertNotIn(self.requirement_b, risk.related_requirements.all())

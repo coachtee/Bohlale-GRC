@@ -2,7 +2,8 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 
 from activity.utils import log_activity
-from core.permissions import get_object_or_404_scoped, require_editor, require_organisation
+from core.permissions import get_object_or_404_scoped, require_approver, require_editor, require_organisation
+from core.protected_media import serve_tenant_file
 
 from .forms import InputRecordForm, ManagementReviewForm
 from .models import ManagementReview, ManagementReviewInputRecord
@@ -35,6 +36,12 @@ def review_detail(request, pk):
     return render(request, "reviews/detail.html", {"review": review, "inputs": review.input_records.all()})
 
 
+@require_organisation
+def review_download(request, pk):
+    review = get_object_or_404_scoped(ManagementReview.objects, request, pk=pk)
+    return serve_tenant_file(review, "attachment")
+
+
 @require_editor
 def input_record_update(request, pk):
     # ManagementReviewInputRecord has no organisation FK of its own —
@@ -51,7 +58,7 @@ def input_record_update(request, pk):
     return redirect("reviews:detail", pk=record.review_id)
 
 
-@require_editor
+@require_approver
 def review_complete(request, pk):
     review = get_object_or_404_scoped(ManagementReview.objects, request, pk=pk)
     if request.method == "POST":

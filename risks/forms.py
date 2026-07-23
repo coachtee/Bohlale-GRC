@@ -41,8 +41,13 @@ class RiskForm(TenantModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.organisation is not None:
+            from django.db.models import Q
+
             member_qs = User.objects.filter(
                 id__in=Membership.objects.filter(organisation=self.organisation, is_active=True).values("user_id")
             )
             self.fields["owner"].queryset = member_qs
             self.fields["treatment_owner"].queryset = member_qs
+            self.fields["related_requirements"].queryset = self.fields["related_requirements"].queryset.filter(
+                Q(framework__organisation__isnull=True) | Q(framework__organisation=self.organisation)
+            )

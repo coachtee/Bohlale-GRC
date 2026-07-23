@@ -9,6 +9,7 @@ from django.utils import timezone
 from activity.utils import log_activity
 from core.permissions import can_administer
 
+from .constants import ADMIN_ROLES, ROLE_CHOICES
 from .forms import InviteMemberForm, OrganisationForm
 from .middleware import set_active_organisation
 from .models import Membership, Organisation, OrganisationInvite
@@ -81,7 +82,7 @@ def member_list(request):
     return render(
         request,
         "tenancy/member_list.html",
-        {"members": members, "invites": invites, "can_manage": can_administer(request)},
+        {"members": members, "invites": invites, "can_manage": can_administer(request), "role_choices": ROLE_CHOICES},
     )
 
 
@@ -109,6 +110,66 @@ def invite_member(request):
     else:
         form = InviteMemberForm()
     return render(request, "tenancy/invite_form.html", {"form": form})
+
+
+def _active_admin_count(organisation, exclude_membership_id=None):
+    qs = Membership.objects.filter(organisation=organisation, is_active=True, role__in=ADMIN_ROLES)
+    if exclude_membership_id:
+        qs = qs.exclude(pk=exclude_membership_id)
+    return qs.count()
+
+
+@login_required
+def member_update_role(request, pk):
+    if request.organisation is None:
+        return redirect("tenancy:organisation_list")
+    if not can_administer(request):
+        raise PermissionDenied("Only organisation administrators can change member roles.")
+    membership = get_object_or_404(Membership, pk=pk, organisation=request.organisation)
+    if request.method == "POST":
+        new_role = request.POST.get("role")
+        if new_role not in dict(ROLE_CHOICES):
+            messages.error(request, "Unknown role.")
+            return redirect("tenancy:member_list")
+        if membership.role in ADMIN_ROLES and new_role not in ADMIN_ROLES and _active_admin_count(request.organisation, exclude_membership_id=membership.pk) == 0:
+            messages.error(request, "Cannot change this member's role — they are the organisation's last administrator.")
+            return redirect("tenancy:member_list")
+        old_role = membership.get_role_display()
+        membership.role = new_role
+        membership.save(update_fields=["role", "updated_at"])
+        log_activity(
+            request, action="role_changed", target=membership,
+            description=f"{membership.user}'s role changed from {old_role} to {membership.get_role_display()}",
+        )
+        messages.success(request, f"{membership.user}'s role updated to {membership.get_role_display()}.")
+    return redirect("tenancy:member_list")
+
+
+@login_required
+def member_remove(request, pk):
+    if request.organisation is None:
+        return redirect("tenancy:organisation_list")
+    if not can_administer(request):
+        raise PermissionDenied("Only organisation administrators can remove members.")
+    membership = get_object_or_404(Membership, pk=pk, organisation=request.organisation)
+    if request.method == "POST":
+        if membership.role in ADMIN_ROLES and _active_admin_count(request.organisation, exclude_membership_id=membership.pk) == 0:
+            messages.error(request, "Cannot remove this member — they are the organisation's last administrator.")
+            return redirect("tenancy:member_list")
+        if membership.user_id == request.user.id:
+            messages.error(request, "You cannot remove your own membership.")
+            return redirect("tenancy:member_list")
+        # Soft-deactivate rather than delete: preserves the immutable
+        # audit trail and every historical owner/actor FK pointing at
+        # this membership's user (spec §6/§45).
+        membership.is_active = False
+        membership.save(update_fields=["is_active", "updated_at"])
+        log_activity(
+            request, action="removed", target=membership,
+            description=f"{membership.user} removed from {request.organisation.name}",
+        )
+        messages.success(request, f"{membership.user} has been removed from this organisation.")
+    return redirect("tenancy:member_list")
 
 
 @login_required

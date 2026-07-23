@@ -1,3 +1,4 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -133,3 +134,41 @@ class DocumentTenantIsolationTests(TestCase):
         response = self.client.get(reverse("documents:list"))
         self.assertContains(response, "Org A policy")
         self.assertNotContains(response, "Org B secret policy")
+
+    def test_org_a_cannot_download_org_b_document_attachment(self):
+        self.doc_b.attachment = SimpleUploadedFile("secret.pdf", b"org-b-confidential")
+        self.doc_b.save()
+        self.client.login(email="a@example.com", password="StrongPass123!")
+        response = self.client.get(reverse("documents:download", args=[self.doc_b.pk]))
+        self.assertEqual(response.status_code, 404)
+
+
+class DocumentDownloadTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(name="Org A")
+        self.user = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=self.user, role="org_admin")
+        self.document = Document.objects.create(
+            organisation=self.org, title="Policy", attachment=SimpleUploadedFile("policy.pdf", b"policy-bytes")
+        )
+        self.client.login(email="a@example.com", password="StrongPass123!")
+
+    def test_same_org_member_can_download(self):
+        response = self.client.get(reverse("documents:download", args=[self.document.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b"".join(response.streaming_content), b"policy-bytes")
+
+
+class DocumentFormIDORTests(TestCase):
+    def setUp(self):
+        from frameworks.models import Framework
+
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.framework_b = Framework.objects.create(name="Org B Private Framework", code="ORGB", organisation=self.org_b)
+
+    def test_form_queryset_excludes_other_orgs_private_framework(self):
+        from .forms import DocumentForm
+
+        form = DocumentForm(organisation=self.org_a)
+        self.assertNotIn(self.framework_b, form.fields["related_frameworks"].queryset)

@@ -5,7 +5,7 @@
   <div><h1>{% block report_title %}Report{% endblock %}</h1><p class="subtitle">{% block report_subtitle %}{% endblock %}</p></div>
   <div class="flex gap-2">
     {% block report_actions %}{% endblock %}
-    <button class="btn btn-secondary" onclick="window.print()">{% icon 'download' 'nav-icon' %} Print / Save as PDF</button>
+    <button class="btn btn-secondary" data-print>{% icon 'download' 'nav-icon' %} Print / Save as PDF</button>
   </div>
 </div>
 <div class="mb-2" style="display:none;" id="print-header">

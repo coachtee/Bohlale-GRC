@@ -43,12 +43,13 @@ class AuditFlowTests(TestCase):
         self.assertEqual(self.audit.status, "findings_recorded")
         self.assertEqual(self.audit.findings.count(), 1)
 
-    def test_close_audit(self):
+    def test_internal_auditor_cannot_close_audit(self):
+        # Closing is an independent sign-off (spec §30) — Approver-level
+        # roles only, even for the auditor who conducted it.
         response = self.client.post(reverse("audits:close", args=[self.audit.pk]))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
         self.audit.refresh_from_db()
-        self.assertEqual(self.audit.status, "closed")
-        self.assertIsNotNone(self.audit.closed_at)
+        self.assertEqual(self.audit.status, "in_progress")
 
     def test_assigning_lead_auditor_on_create_notifies_them(self):
         auditor = User.objects.create_user(email="auditor@example.com", password="StrongPass123!")
@@ -59,6 +60,22 @@ class AuditFlowTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Notification.objects.filter(recipient=auditor, category="audit").exists())
+
+
+class AuditCloseRBACTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(name="NIBS")
+        self.approver = User.objects.create_user(email="approver@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=self.approver, role="org_admin")
+        self.client.login(email="approver@example.com", password="StrongPass123!")
+        self.audit = Audit.objects.create(organisation=self.org, title="Audit", status="in_progress")
+
+    def test_approver_can_close_audit(self):
+        response = self.client.post(reverse("audits:close", args=[self.audit.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.audit.refresh_from_db()
+        self.assertEqual(self.audit.status, "closed")
+        self.assertIsNotNone(self.audit.closed_at)
 
 
 class AuditTenantIsolationTests(TestCase):
@@ -73,3 +90,19 @@ class AuditTenantIsolationTests(TestCase):
     def test_org_a_cannot_view_org_b_audit(self):
         response = self.client.get(reverse("audits:detail", args=[self.audit_b.pk]))
         self.assertEqual(response.status_code, 404)
+
+
+class AuditFindingFormIDORTests(TestCase):
+    def setUp(self):
+        from frameworks.models import Framework, Requirement
+
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        framework_b = Framework.objects.create(name="Org B Private Framework", code="ORGB", organisation=self.org_b)
+        self.requirement_b = Requirement.objects.create(framework=framework_b, title="Org B secret requirement")
+
+    def test_form_queryset_excludes_other_orgs_private_requirement(self):
+        from .forms import AuditFindingForm
+
+        form = AuditFindingForm(organisation=self.org_a)
+        self.assertNotIn(self.requirement_b, form.fields["requirement"].queryset)

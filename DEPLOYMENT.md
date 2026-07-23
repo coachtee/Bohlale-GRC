@@ -176,9 +176,13 @@ server {
         alias /opt/bohlale-grc/app/staticfiles/;
     }
 
-    location /media/ {
-        alias /opt/bohlale-grc/app/media/;
-    }
+    # Deliberately no `location /media/ { alias ... }` block. Uploaded
+    # evidence, document attachments and management-review attachments
+    # contain confidential tenant compliance data and must never be
+    # reachable by a raw filesystem path — they are downloaded through
+    # tenant-and-RBAC-checked Django views instead (see
+    # core/protected_media.py and SECURITY_AUDIT.md). Do not add a
+    # `/media/` alias here; doing so would bypass those checks entirely.
 
     location / {
         proxy_pass http://unix:/opt/bohlale-grc/app/gunicorn.sock;

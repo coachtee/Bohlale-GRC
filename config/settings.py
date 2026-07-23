@@ -30,12 +30,21 @@ def env_list(name, default=""):
 
 # --- Core / security -------------------------------------------------
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-dev-only-key-change-in-production-4f8c2e9a1b3d",
-)
+_INSECURE_DEFAULT_SECRET_KEY = "django-insecure-dev-only-key-change-in-production-4f8c2e9a1b3d"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_DEFAULT_SECRET_KEY)
 
 DEBUG = env_bool("DJANGO_DEBUG", default=True)
+
+if not DEBUG and SECRET_KEY == _INSECURE_DEFAULT_SECRET_KEY:
+    # Refuse to boot in production with the checked-in dev key rather
+    # than silently running with a well-known, guessable SECRET_KEY
+    # (spec §45: "environment-based secrets"). Generate a real one with:
+    #   python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY is not set (or still the insecure dev default) while "
+        "DJANGO_DEBUG=False. Set a real, random DJANGO_SECRET_KEY in the "
+        "environment before running with DEBUG off. See DEPLOYMENT.md."
+    )
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
@@ -46,9 +55,12 @@ SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", default=False)
 CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", default=False)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False  # HTMX needs to read the CSRF cookie from JS
+SESSION_COOKIE_AGE = int(os.environ.get("DJANGO_SESSION_COOKIE_AGE", 60 * 60 * 24 * 7))  # 7 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env_bool("DJANGO_SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False)
 X_FRAME_OPTIONS = "DENY"
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
 
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
@@ -108,6 +120,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
     "tenancy.middleware.TenantMiddleware",
     "activity.middleware.CurrentUserMiddleware",
 ]

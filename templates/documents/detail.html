@@ -59,6 +59,10 @@
       <div class="text-sm"><strong>Classification:</strong> {{ document.get_classification_display }}</div>
       <div class="text-sm"><strong>Effective date:</strong> {{ document.effective_date|default:"—" }}</div>
       <div class="text-sm"><strong>Next review:</strong> {{ document.next_review_date|default:"—" }}</div>
+      {% if document.attachment %}
+      <div class="divider"></div>
+      <a class="btn btn-secondary btn-sm" href="{% url 'documents:download' document.pk %}">{% icon 'download' 'nav-icon' %} Download attachment</a>
+      {% endif %}
     </div>
 
     <div class="card">

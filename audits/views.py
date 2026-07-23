@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from activity.utils import log_activity
 from core.base_views import TenantCreateView, TenantDeleteView, TenantDetailView, TenantListView, TenantUpdateView
-from core.permissions import get_object_or_404_scoped, require_editor
+from core.permissions import get_object_or_404_scoped, require_approver, require_editor
 from notifications.utils import notify
 
 from .forms import AuditFindingForm, AuditForm
@@ -94,7 +94,7 @@ def audit_add_finding(request, pk):
     return redirect("audits:detail", pk=audit.pk)
 
 
-@require_editor
+@require_approver
 def audit_close(request, pk):
     audit = get_object_or_404_scoped(Audit.objects, request, pk=pk)
     if request.method == "POST":

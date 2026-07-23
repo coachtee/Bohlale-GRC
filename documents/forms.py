@@ -27,8 +27,13 @@ class DocumentForm(TenantModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.organisation is not None:
+            from django.db.models import Q
+
             self.fields["owner"].queryset = User.objects.filter(
                 id__in=Membership.objects.filter(organisation=self.organisation, is_active=True).values("user_id")
+            )
+            self.fields["related_frameworks"].queryset = self.fields["related_frameworks"].queryset.filter(
+                Q(organisation__isnull=True) | Q(organisation=self.organisation)
             )
 
 

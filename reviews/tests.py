@@ -1,3 +1,4 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
@@ -58,6 +59,19 @@ class ReviewViewFlowTests(TestCase):
         self.assertEqual(review.status, "completed")
         self.assertEqual(review.approved_by, self.user)
 
+    def test_editor_cannot_complete_review(self):
+        # Completing a management review sets approved_by (spec §32) —
+        # an approval action requiring Approver-level roles, not any Editor.
+        contributor = User.objects.create_user(email="contrib@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=contributor, role="compliance_manager")
+        self.client.logout()
+        self.client.login(email="contrib@example.com", password="StrongPass123!")
+        review = create_review(self.org, meeting_date="2026-01-15")
+        response = self.client.post(reverse("reviews:complete", args=[review.pk]))
+        self.assertEqual(response.status_code, 403)
+        review.refresh_from_db()
+        self.assertNotEqual(review.status, "completed")
+
     def test_create_corrective_action_from_review(self):
         review = create_review(self.org, meeting_date="2026-01-15", decisions="Improve access reviews")
         response = self.client.post(
@@ -82,4 +96,10 @@ class ReviewTenantIsolationTests(TestCase):
 
     def test_org_a_cannot_view_org_b_review(self):
         response = self.client.get(reverse("reviews:detail", args=[self.review_b.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_org_a_cannot_download_org_b_review_attachment(self):
+        self.review_b.attachment = SimpleUploadedFile("secret.pdf", b"org-b-confidential")
+        self.review_b.save()
+        response = self.client.get(reverse("reviews:download", args=[self.review_b.pk]))
         self.assertEqual(response.status_code, 404)

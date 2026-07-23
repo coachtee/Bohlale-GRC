@@ -200,6 +200,10 @@ IMPORT_STATUS_CHOICES = [
 ]
 
 
+def framework_import_upload_path(instance, filename):
+    return f"framework_imports/{instance.organisation_id}/{filename}"
+
+
 class FrameworkImport(TimeStampedModel):
     """
     Framework Studio (spec §18): Upload -> Analyse -> Extract -> Review
@@ -214,7 +218,7 @@ class FrameworkImport(TimeStampedModel):
         "tenancy.Organisation", on_delete=models.CASCADE, related_name="framework_imports"
     )
     source_file = models.FileField(
-        upload_to="framework_imports/", blank=True, null=True, validators=[validate_upload_file]
+        upload_to=framework_import_upload_path, blank=True, null=True, validators=[validate_upload_file]
     )
     source_text = models.TextField(
         blank=True, help_text="Pasted source text, used when no file is uploaded."

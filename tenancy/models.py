@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from core.models import TimeStampedModel
+from core.validators import validate_upload_file
 from .constants import ORGANISATION_TYPE_CHOICES, ROLE_CHOICES
 
 
@@ -23,7 +24,7 @@ class Organisation(TimeStampedModel):
     country = models.CharField(max_length=100, default="South Africa")
     province = models.CharField(max_length=100, blank=True)
     website = models.URLField(blank=True)
-    logo = models.ImageField(upload_to="org_logos/", blank=True, null=True)
+    logo = models.ImageField(upload_to="org_logos/", blank=True, null=True, validators=[validate_upload_file])
     size = models.CharField(
         max_length=30,
         choices=[

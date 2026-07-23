@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from activity.utils import log_activity
 from core.permissions import can_approve, get_object_or_404_scoped, require_editor, require_organisation
+from core.protected_media import serve_tenant_file
 from notifications.utils import notify
 from tenancy.constants import APPROVER_ROLES
 from tenancy.models import Membership
@@ -64,6 +65,12 @@ def document_detail(request, pk):
         "documents/detail.html",
         {"document": document, "versions": versions, "can_sign": can_sign, "pending_approval": pending_approval},
     )
+
+
+@require_organisation
+def document_download(request, pk):
+    document = get_object_or_404_scoped(Document.objects, request, pk=pk)
+    return serve_tenant_file(document, "attachment")
 
 
 @require_editor

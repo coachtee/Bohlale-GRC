@@ -37,6 +37,42 @@
     });
   });
 
+  // Auto-submit a form when a marked field changes (CSP-friendly
+  // replacement for inline onchange="this.form.submit()").
+  qsa("[data-autosubmit]").forEach(function (field) {
+    field.addEventListener("change", function () {
+      field.form && field.form.submit();
+    });
+  });
+
+  // Confirm before submitting a form (CSP-friendly replacement for
+  // inline onsubmit="return confirm(...)").
+  qsa("form[data-confirm]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      if (!window.confirm(form.getAttribute("data-confirm"))) {
+        e.preventDefault();
+      }
+    });
+  });
+
+  // Print the current page (CSP-friendly replacement for inline
+  // onclick="window.print()").
+  qsa("[data-print]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      window.print();
+    });
+  });
+
+  // Toggle a target element's visibility by id (CSP-friendly
+  // replacement for a page-local inline <script> block).
+  qsa("[data-toggle-target]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = document.getElementById(btn.getAttribute("data-toggle-target"));
+      if (!target) return;
+      target.style.display = target.style.display === "none" ? "table-row" : "none";
+    });
+  });
+
   // Light / dark theme toggle
   var THEME_KEY = "bohlale-theme";
   function applyTheme(theme) {
