@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Thank you — Bohlale GRC{% endblock %}
+{% block guest_content %}
+<div class="auth-shell">
+  <div class="auth-card" style="text-align:center;">
+    <h2>Thank you</h2>
+    <p class="text-secondary text-sm">Your response has been recorded for {{ info_request.organisation.name }}.</p>
+  </div>
+</div>
+{% endblock %}

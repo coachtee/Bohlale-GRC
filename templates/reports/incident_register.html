@@ -1,0 +1,21 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Incident Register — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Incident Register{% endblock %}
+{% block report_subtitle %}{{ active_organisation.name }}{% endblock %}
+{% block report_actions %}<a class="btn btn-secondary" href="?format=xlsx">Export Excel</a>{% endblock %}
+{% block report_content %}
+<table class="data-table">
+  <thead><tr><th>Reference</th><th>Title</th><th>Severity</th><th>Status</th><th>Discovered</th><th>Personal Info</th></tr></thead>
+  <tbody>
+  {% for i in incidents %}
+    <tr>
+      <td>{{ i.reference_code }}</td><td>{{ i.title }}</td><td>{{ i.get_severity_display }}</td>
+      <td>{{ i.get_status_display }}</td><td>{{ i.discovered_at|date:"d M Y"|default:"—" }}</td>
+      <td>{{ i.personal_info_involved|yesno:"Yes,No" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-muted">No incidents recorded.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

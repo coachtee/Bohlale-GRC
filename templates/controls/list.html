@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Controls — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Controls</h1>
+    <p class="subtitle">The organisation's control library — reusable across every adopted framework.</p>
+  </div>
+  <div class="flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'controls:soa' %}">Statement of Applicability</a>
+    <a class="btn btn-primary" href="{% url 'controls:create' %}">{% icon 'plus' 'nav-icon' %} Add control</a>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Control</th><th>Owner</th><th>Implementation</th><th>Effectiveness</th><th>Frameworks</th></tr></thead>
+    <tbody>
+    {% for control in controls %}
+      <tr>
+        <td>{{ control.reference_code }}</td>
+        <td><a href="{% url 'controls:detail' control.pk %}">{{ control.name }}</a></td>
+        <td>{{ control.owner|default:"—" }}</td>
+        <td>
+          {% if control.implementation_status == 'implemented' %}<span class="badge badge-green">Implemented</span>
+          {% elif control.implementation_status == 'partially_implemented' %}<span class="badge badge-amber">Partial</span>
+          {% elif control.implementation_status == 'not_applicable' %}<span class="badge badge-grey">N/A</span>
+          {% else %}<span class="badge badge-red">Not Implemented</span>{% endif %}
+        </td>
+        <td>{{ control.get_effectiveness_display }}</td>
+        <td>{% for req in control.framework_requirements.all|slice:":3" %}<span class="badge badge-outline">{{ req.framework.code }}</span> {% endfor %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-muted">No controls yet. Visit the <a href="{% url 'controls:soa' %}">Statement of Applicability</a> to seed the common control library.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

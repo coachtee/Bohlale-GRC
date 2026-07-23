@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Delete — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Delete {{ object }}?</h1><p class="subtitle">This action cannot be undone.</p></div></div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-actions">
+      <button class="btn btn-danger" type="submit">Delete</button>
+      <a class="btn btn-secondary" href="{{ cancel_url }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

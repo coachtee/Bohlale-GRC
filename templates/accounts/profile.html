@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Profile — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Your profile</h1><p class="subtitle">{{ user.email }}</p></div></div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ assessment.name }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ assessment.name }}</h1><p class="subtitle">{{ assessment.get_assessment_type_display }} · {{ assessment.framework }}</p></div>
+  <div class="text-right"><div class="font-bold" style="font-size:1.4rem;">{{ completion }}%</div><div class="text-xs text-muted">Rated</div></div>
+</div>
+
+<div class="card">
+  {% for result in results %}
+    <div class="list-row" style="align-items:flex-start;">
+      <div class="list-row-main">
+        <div>
+          <div class="list-row-title">{{ result.requirement.ref_code|default:"" }} {{ result.requirement.title|default:result.control }}</div>
+          {% if result.requirement.guidance %}<div class="list-row-meta">{{ result.requirement.guidance }}</div>{% endif %}
+        </div>
+      </div>
+      <form method="post" action="{% url 'assessments:result_update' result.pk %}" class="flex gap-2 items-start" style="min-width:280px;">
+        {% csrf_token %}
+        <select name="rating" class="form-select" style="width:auto;">
+          <option value="not_assessed" {% if result.rating == 'not_assessed' %}selected{% endif %}>Not Assessed</option>
+          <option value="not_implemented" {% if result.rating == 'not_implemented' %}selected{% endif %}>Not Implemented</option>
+          <option value="partially_implemented" {% if result.rating == 'partially_implemented' %}selected{% endif %}>Partially Implemented</option>
+          <option value="implemented" {% if result.rating == 'implemented' %}selected{% endif %}>Implemented</option>
+          <option value="effective" {% if result.rating == 'effective' %}selected{% endif %}>Effective</option>
+          <option value="not_applicable" {% if result.rating == 'not_applicable' %}selected{% endif %}>Not Applicable</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" type="submit">Save</button>
+      </form>
+    </div>
+  {% empty %}
+    <div class="empty-state">No requirements to assess.</div>
+  {% endfor %}
+</div>
+{% endblock %}

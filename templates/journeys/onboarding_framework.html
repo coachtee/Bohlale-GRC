@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Select a framework — {{ active_organisation.name }}{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Select a framework</h1><p class="subtitle">Which framework should this guided journey follow?</p></div></div>
+<div class="grid grid-2">
+  {% for fw in frameworks %}
+  <form method="post" class="card" style="cursor:pointer;">
+    {% csrf_token %}
+    <input type="hidden" name="framework_id" value="{{ fw.pk }}">
+    <div class="card-title-row"><h3>{{ fw.name }}</h3></div>
+    <p class="text-sm text-secondary">{{ fw.description|truncatewords:20 }}</p>
+    <button class="btn btn-primary btn-sm" type="submit">Select</button>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}

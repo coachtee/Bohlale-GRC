@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}AI Generation — {{ generation.purpose }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>{{ generation.purpose }}</h1><p class="subtitle">{{ generation.provider }} / {{ generation.model }} — {{ generation.created_at|date:"d M Y H:i" }}</p></div></div>
+<div class="card mb-3">
+  <h3>Context used</h3>
+  <p class="text-sm text-secondary" style="white-space:pre-wrap;">{{ generation.context_reference|default:"—" }}</p>
+</div>
+<div class="card">
+  <h3>Output</h3>
+  <pre style="white-space:pre-wrap;font-family:inherit;font-size:0.86rem;">{{ generation.output_text }}</pre>
+</div>
+{% endblock %}

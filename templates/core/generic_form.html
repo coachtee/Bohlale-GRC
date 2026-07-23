@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title|default:"Form" }} — Bohlale GRC{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>{{ form_title|default:"Form" }}</h1></div></div>
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        {% if field.field.widget.input_type != 'checkbox' %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <label class="flex items-center gap-2 text-sm">{{ field }} {{ field.label }}</label>
+        {% else %}
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      {% if cancel_url %}<a class="btn btn-secondary" href="{{ cancel_url }}">Cancel</a>{% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

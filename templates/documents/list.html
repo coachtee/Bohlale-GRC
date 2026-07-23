@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Documents — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Documents</h1>
+    <p class="subtitle">Policies &amp; procedures — Bohlale GRC's controlled document register.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'documents:create' %}">{% icon 'plus' 'nav-icon' %} Create document</a>
+</div>
+
+<div class="pill-nav">
+  <a class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}" href="?">All</a>
+  <a class="btn btn-sm {% if status_filter == 'draft' %}btn-primary{% else %}btn-secondary{% endif %}" href="?status=draft">Draft</a>
+  <a class="btn btn-sm {% if status_filter == 'awaiting_approval' %}btn-primary{% else %}btn-secondary{% endif %}" href="?status=awaiting_approval">Awaiting Approval</a>
+  <a class="btn btn-sm {% if status_filter == 'published' %}btn-primary{% else %}btn-secondary{% endif %}" href="?status=published">Published</a>
+</div>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Reference</th><th>Title</th><th>Type</th><th>Version</th><th>Owner</th><th>Status</th><th>Next Review</th></tr></thead>
+    <tbody>
+    {% for doc in documents %}
+      <tr>
+        <td>{{ doc.reference_code }}</td>
+        <td><a href="{% url 'documents:detail' doc.pk %}">{{ doc.title }}</a></td>
+        <td>{{ doc.get_doc_type_display }}</td>
+        <td>{{ doc.version_label }}</td>
+        <td>{{ doc.owner|default:"—" }}</td>
+        <td>
+          {% if doc.status == 'published' %}<span class="badge badge-green">Published</span>
+          {% elif doc.status == 'awaiting_approval' %}<span class="badge badge-amber">Awaiting Approval</span>
+          {% elif doc.status == 'approved' %}<span class="badge badge-blue">Approved</span>
+          {% elif doc.status == 'archived' or doc.status == 'superseded' %}<span class="badge badge-grey">{{ doc.get_status_display }}</span>
+          {% else %}<span class="badge badge-outline">{{ doc.get_status_display }}</span>{% endif %}
+        </td>
+        <td>
+          {% if doc.is_review_overdue %}<span class="badge badge-red">Overdue</span>
+          {% elif doc.is_review_due_soon %}<span class="badge badge-amber">Due soon</span>
+          {% elif doc.next_review_date %}{{ doc.next_review_date|date:"d M Y" }}{% else %}—{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No documents yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

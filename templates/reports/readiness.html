@@ -1,0 +1,31 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Audit Readiness — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Audit Readiness{% endblock %}
+{% block report_subtitle %}{{ framework.name }} — a transparent view of what's left before certification-audit preparation. This is not a certification.{% endblock %}
+{% block report_actions %}
+{% if frameworks.count > 1 %}
+<form method="get">
+  <select name="framework" class="form-select" onchange="this.form.submit()">
+    {% for fw in frameworks %}<option value="{{ fw.pk }}" {% if fw.pk == framework.pk %}selected{% endif %}>{{ fw.name }}</option>{% endfor %}
+  </select>
+</form>
+{% endif %}
+{% endblock %}
+{% block report_content %}
+{% for name, value in readiness.dimensions.items %}
+  <div class="progress-row">
+    <div class="progress-row-label"><span>{{ name }}</span><span>{{ value }}%</span></div>
+    <div class="progress-track"><div class="progress-fill{% if value < 50 %} red{% elif value < 80 %} amber{% else %} green{% endif %}" style="width: {{ value }}%;"></div></div>
+  </div>
+{% endfor %}
+<div class="divider"></div>
+<div class="flex justify-between items-center">
+  <span class="text-sm">Open Major Gaps</span>
+  <span class="badge {% if readiness.open_major_gaps > 0 %}badge-red{% else %}badge-green{% endif %}">{{ readiness.open_major_gaps }}</span>
+</div>
+<div class="divider"></div>
+<div class="flex justify-between items-center">
+  <strong>Overall Readiness</strong>
+  <strong style="font-size:1.4rem;">{{ readiness.overall }}%</strong>
+</div>
+{% endblock %}

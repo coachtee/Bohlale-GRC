@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ risk.title }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ risk.title }}</h1><p class="subtitle">{{ risk.reference_code }} · {{ risk.get_category_display }}</p></div>
+  <div class="flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'risks:edit' risk.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+  </div>
+</div>
+
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>Description</h3>
+    <p class="text-sm text-secondary">{{ risk.description|default:"—" }}</p>
+    <div class="divider"></div>
+    <div class="grid grid-2">
+      <div><p class="text-xs text-muted mb-1">THREAT</p><p class="text-sm">{{ risk.threat|default:"—" }}</p></div>
+      <div><p class="text-xs text-muted mb-1">VULNERABILITY</p><p class="text-sm">{{ risk.vulnerability|default:"—" }}</p></div>
+      <div><p class="text-xs text-muted mb-1">ASSET / PROCESS</p><p class="text-sm">{{ risk.asset_process|default:"—" }}</p></div>
+      <div><p class="text-xs text-muted mb-1">EXISTING CONTROLS</p><p class="text-sm">{{ risk.existing_controls|default:"—" }}</p></div>
+    </div>
+    <div class="divider"></div>
+    <p class="text-xs text-muted mb-1">TREATMENT PLAN</p>
+    <p class="text-sm">{{ risk.treatment_plan|default:"Not documented yet." }}</p>
+  </div>
+
+  <div>
+    <div class="card mb-3">
+      <h3>Rating</h3>
+      {% with band=risk.inherent_band %}
+      <div class="progress-row">
+        <div class="progress-row-label"><span>Inherent risk</span><span>{{ risk.inherent_risk_score }}/25 · {{ band.1 }}</span></div>
+        <div class="progress-track"><div class="progress-fill {% if band.0 == 'high' %}red{% elif band.0 == 'medium' %}amber{% else %}green{% endif %}" style="width: {% widthratio risk.inherent_risk_score 25 100 %}%;"></div></div>
+      </div>
+      {% endwith %}
+      {% if risk.residual_risk_score %}
+        {% with band=risk.residual_band %}
+        <div class="progress-row">
+          <div class="progress-row-label"><span>Residual risk</span><span>{{ risk.residual_risk_score }}/25 · {{ band.1 }}</span></div>
+          <div class="progress-track"><div class="progress-fill {% if band.0 == 'high' %}red{% elif band.0 == 'medium' %}amber{% else %}green{% endif %}" style="width: {% widthratio risk.residual_risk_score 25 100 %}%;"></div></div>
+        </div>
+        {% endwith %}
+      {% endif %}
+      <div class="text-sm mb-1"><strong>Likelihood:</strong> {{ risk.likelihood }}/5</div>
+      <div class="text-sm"><strong>Impact:</strong> {{ risk.impact }}/5</div>
+    </div>
+
+    <div class="card">
+      <h3>Ownership</h3>
+      <div class="text-sm"><strong>Risk owner:</strong> {{ risk.owner|default:"—" }}</div>
+      <div class="text-sm"><strong>Treatment:</strong> {{ risk.get_treatment_display }}</div>
+      <div class="text-sm"><strong>Treatment owner:</strong> {{ risk.treatment_owner|default:"—" }}</div>
+      <div class="text-sm"><strong>Due date:</strong> {{ risk.due_date|default:"—" }}</div>
+      <div class="text-sm"><strong>Status:</strong> <span class="badge badge-outline">{{ risk.get_status_display }}</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

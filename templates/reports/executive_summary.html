@@ -1,0 +1,39 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Executive Compliance Summary — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Executive Compliance Summary{% endblock %}
+{% block report_subtitle %}{{ active_organisation.name }} — generated {{ summary.generated_at|date:"d M Y H:i" }}{% endblock %}
+{% block report_content %}
+<div class="grid grid-3 mb-3">
+  <div><p class="text-xs text-muted mb-1">OPEN ACTIONS</p><p class="font-bold" style="font-size:1.6rem;">{{ summary.open_actions }}</p><p class="text-xs text-muted">{{ summary.overdue_actions }} overdue</p></div>
+  <div><p class="text-xs text-muted mb-1">DOCUMENTS AWAITING APPROVAL</p><p class="font-bold" style="font-size:1.6rem;">{{ summary.documents_awaiting_approval }}</p><p class="text-xs text-muted">{{ summary.documents_published }} published</p></div>
+  <div><p class="text-xs text-muted mb-1">OPEN INCIDENTS</p><p class="font-bold" style="font-size:1.6rem;">{{ summary.open_incidents }}</p></div>
+</div>
+
+<h3>Framework progress</h3>
+<table class="data-table">
+  <thead><tr><th>Framework</th><th>Progress</th></tr></thead>
+  <tbody>
+  {% for row in summary.frameworks %}
+    <tr><td>{{ row.framework.name }}</td><td>{{ row.progress }}%</td></tr>
+  {% empty %}
+    <tr><td colspan="2" class="text-muted">No frameworks adopted yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3 style="margin-top:20px;">Risk overview</h3>
+<table class="data-table">
+  <thead><tr><th>Very Low</th><th>Low</th><th>Medium</th><th>High</th><th>Total</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>{{ summary.risk_overview.counts.very_low }}</td>
+      <td>{{ summary.risk_overview.counts.low }}</td>
+      <td>{{ summary.risk_overview.counts.medium }}</td>
+      <td>{{ summary.risk_overview.counts.high }}</td>
+      <td>{{ summary.risk_overview.total }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="text-xs text-muted" style="margin-top:16px;">Evidence expiring within 30 days: {{ summary.evidence_expiring_soon }}</p>
+{% endblock %}

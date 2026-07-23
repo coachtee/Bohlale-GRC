@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Dashboard — {{ organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Good {{ daypart }}, {{ user.first_name|default:user.email }} 👋</h1>
+    <p class="subtitle">Here's what's happening with {{ organisation.name }} today.</p>
+  </div>
+  <div class="relative">
+    <button class="btn btn-secondary" data-dropdown-toggle="org-switch-panel" type="button">
+      {% icon 'building' 'nav-icon' %} {{ organisation.name }} {% icon 'chevron-down' 'nav-icon' %}
+    </button>
+    <div class="dropdown-panel" id="org-switch-panel">
+      <div class="dropdown-header">Switch organisation</div>
+      {% for org in accessible_organisations %}
+        <a class="dropdown-item" href="{% url 'tenancy:organisation_switch' org.pk %}">{{ org.name }}</a>
+      {% endfor %}
+      <a class="dropdown-item text-sm font-semibold" href="{% url 'tenancy:organisation_create' %}">+ New organisation</a>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-4 mb-3">
+  <div class="card">
+    <div class="card-title-row"><h3>ISMS Implementation</h3></div>
+    <p class="text-xs text-muted mb-2">Overall Progress</p>
+    <div class="flex items-center gap-3">
+      <div class="donut" style="{{ journey_donut_style }}">
+        <div class="donut-label"><span class="donut-value">{{ journey.progress_percent|default:0 }}%</span></div>
+      </div>
+      <div>
+        {% if journey %}
+          <p class="font-semibold text-sm mb-1">You're building your {{ journey.template.framework.code|default:"management system" }}</p>
+          <p class="text-xs text-muted mb-2">Next: {{ journey.current_step.title|default:"All steps complete" }}</p>
+          <a class="btn btn-primary btn-sm" href="{% url 'journeys:journey_home' %}">Continue Journey</a>
+        {% else %}
+          <p class="text-sm text-secondary mb-2">No journey started yet.</p>
+          <a class="btn btn-primary btn-sm" href="{% url 'journeys:onboarding_goal' %}">Start a Journey</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title-row"><h3>Compliance Overview</h3></div>
+    <p class="text-xs text-muted mb-2">All Frameworks</p>
+    {% for row in compliance_overview %}
+      <div class="progress-row">
+        <div class="progress-row-label"><span>{{ row.framework.code|default:row.framework.name }}</span><span>{{ row.progress }}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width: {{ row.progress }}%;"></div></div>
+      </div>
+    {% empty %}
+      <p class="text-sm text-muted mb-2">No frameworks adopted yet.</p>
+    {% endfor %}
+    <a class="card-link" href="{% url 'frameworks:list' %}">View all frameworks {% icon 'arrow-right' 'nav-icon' %}</a>
+  </div>
+
+  <div class="card">
+    <div class="card-title-row"><h3>Open Actions</h3></div>
+    <p class="text-xs text-muted mb-2">Across all areas</p>
+    <div class="flex items-center gap-2 mb-2">
+      <span class="font-bold" style="font-size:2.2rem;">{{ open_actions.total }}</span>
+      <span class="text-sm text-muted">Open actions</span>
+    </div>
+    <div class="text-sm mb-1"><span class="status-dot red" style="display:inline-block;"></span> {{ open_actions.overdue }} Overdue</div>
+    <div class="text-sm mb-1"><span class="status-dot amber" style="display:inline-block;"></span> {{ open_actions.due_this_week }} Due this week</div>
+    <div class="text-sm mb-2"><span class="status-dot green" style="display:inline-block;"></span> {{ open_actions.due_this_month }} Due this month</div>
+    <a class="card-link" href="{% url 'actions:list' %}">View all actions {% icon 'arrow-right' 'nav-icon' %}</a>
+  </div>
+
+  <div class="card">
+    <div class="card-title-row"><h3>Risk Overview</h3></div>
+    <p class="text-xs text-muted mb-2">Current Status</p>
+    <div class="flex items-center gap-3">
+      <div class="donut" style="{{ risk_donut_style }}">
+        <div class="donut-label"><span class="donut-value">{{ risk_overview.total }}</span><span class="donut-caption">Total Risks</span></div>
+      </div>
+      <div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--color-red);"></span>{{ risk_overview.counts.high }} High</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--color-amber);"></span>{{ risk_overview.counts.medium }} Medium</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--color-green);"></span>{{ risk_overview.counts.low }} Low</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--color-grey-400);"></span>{{ risk_overview.counts.very_low }} Very Low</div>
+      </div>
+    </div>
+    <a class="card-link" style="margin-top:10px;display:inline-flex;" href="{% url 'risks:list' %}">View risk register {% icon 'arrow-right' 'nav-icon' %}</a>
+  </div>
+</div>
+
+<div class="grid grid-main-side">
+  <div>
+    <div class="card mb-3">
+      <div class="card-title-row">
+        <div>
+          <h3>Your Implementation Journey</h3>
+          {% if journey %}<span class="subtitle text-xs text-muted">{{ journey.template.framework.name }}</span>{% endif %}
+        </div>
+        <a class="card-link" href="{% url 'journeys:journey_home' %}">View full journey {% icon 'arrow-right' 'nav-icon' %}</a>
+      </div>
+
+      {% if journey %}
+        <div class="stepper">
+          {% for stage in journey_stages %}
+            <div class="stepper-step {{ stage.status }}">
+              <div class="step-circle">{% if stage.status == 'done' %}{% icon 'check' 'nav-icon' %}{% else %}{{ forloop.counter }}{% endif %}</div>
+              <div class="step-label">{{ stage.title }}</div>
+            </div>
+          {% endfor %}
+        </div>
+        {% if journey.current_step %}
+          <div class="divider"></div>
+          <p class="text-xs text-muted mb-1">CURRENT STEP</p>
+          <h3 class="mt-0">{{ journey.current_step.title }}</h3>
+          <p class="text-sm text-secondary">{{ journey.current_step.description }}</p>
+          <a class="btn btn-primary btn-sm" href="{% url 'journeys:journey_home' %}">Continue Journey {% icon 'arrow-right' 'nav-icon' %}</a>
+        {% else %}
+          <div class="divider"></div>
+          <p class="text-sm text-secondary">All steps complete for this journey.</p>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          {% icon 'journey' %}
+          <p class="font-semibold mb-1">No guided journey started yet.</p>
+          <a class="btn btn-primary" href="{% url 'journeys:onboarding_goal' %}">Start a guided journey</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3>Quick Actions</h3>
+      <div class="quick-actions">
+        <a class="quick-action" href="{% url 'documents:create' %}">
+          <div class="qa-icon">{% icon 'document' 'nav-icon' %}</div>
+          <div class="qa-label">Create Document</div>
+        </a>
+        <a class="quick-action" href="{% url 'incidents:create' %}">
+          <div class="qa-icon">{% icon 'alert' 'nav-icon' %}</div>
+          <div class="qa-label">Report Incident</div>
+        </a>
+        <a class="quick-action" href="{% url 'journeys:information_request_create' %}">
+          <div class="qa-icon">{% icon 'message' 'nav-icon' %}</div>
+          <div class="qa-label">Request Information</div>
+        </a>
+        <a class="quick-action" href="{% url 'assessments:create' %}">
+          <div class="qa-icon">{% icon 'target' 'nav-icon' %}</div>
+          <div class="qa-label">Start Assessment</div>
+        </a>
+        <a class="quick-action" href="{% url 'evidence:create' %}">
+          <div class="qa-icon">{% icon 'upload' 'nav-icon' %}</div>
+          <div class="qa-label">Upload Evidence</div>
+        </a>
+        <a class="quick-action" href="{% url 'documents:create' %}">
+          <div class="qa-icon">{% icon 'document' 'nav-icon' %}</div>
+          <div class="qa-label">Create Policy</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card mb-3">
+      <div class="card-title-row"><h3>Tasks Due Soon</h3></div>
+      {% for task in tasks_due_soon %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <span class="status-dot amber" style="margin-top:6px;"></span>
+            <div>
+              <div class="list-row-title">{{ task.title }}</div>
+              <div class="list-row-meta">{{ task.meta }}</div>
+            </div>
+          </div>
+          <a class="btn btn-sm btn-secondary" href="{{ task.url }}">{{ task.action_label }}</a>
+        </div>
+      {% empty %}
+        <p class="text-sm text-muted">Nothing due soon.</p>
+      {% endfor %}
+      <a class="card-link" style="margin-top:10px;display:inline-flex;" href="{% url 'actions:list' %}">View all tasks {% icon 'arrow-right' 'nav-icon' %}</a>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-title-row"><h3>Upcoming Reviews</h3></div>
+      {% for review in upcoming_reviews %}
+        <div class="list-row">
+          <div class="list-row-main">
+            {% icon 'document' 'nav-icon' %}
+            <div>
+              <div class="list-row-title">{{ review.title }}</div>
+              <div class="list-row-meta">{{ review.meta }}</div>
+            </div>
+          </div>
+          <span class="badge badge-outline">{{ review.days_label }}</span>
+        </div>
+      {% empty %}
+        <p class="text-sm text-muted">No reviews scheduled.</p>
+      {% endfor %}
+      <a class="card-link" style="margin-top:10px;display:inline-flex;" href="{% url 'documents:list' %}">View all documents {% icon 'arrow-right' 'nav-icon' %}</a>
+    </div>
+
+    <div class="card">
+      <div class="card-title-row"><h3>Recent Activity</h3></div>
+      {% for log in recent_activity %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <span class="status-dot grey" style="margin-top:6px;"></span>
+            <div>
+              <div class="list-row-title">{{ log.actor.display_name|default:"System" }} {{ log.action }}</div>
+              <div class="list-row-meta">{{ log.created_at|timesince }} ago</div>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-sm text-muted">No activity yet.</p>
+      {% endfor %}
+      <a class="card-link" style="margin-top:10px;display:inline-flex;" href="{% url 'activity:feed' %}">View all activity {% icon 'arrow-right' 'nav-icon' %}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

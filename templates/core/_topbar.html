@@ -1,0 +1,54 @@
+{% load icons %}
+<header class="topbar">
+  <button class="icon-btn mobile-topbar-toggle" data-toggle-sidebar type="button" aria-label="Toggle menu">
+    {% icon 'menu' 'nav-icon' %}
+  </button>
+  <div></div>
+  <div class="topbar-actions">
+    <button class="icon-btn" data-theme-toggle type="button" aria-label="Toggle theme">
+      {% icon 'sun' 'nav-icon' %}
+    </button>
+
+    <div class="relative">
+      <button class="icon-btn" data-dropdown-toggle="notif-panel" type="button" aria-label="Notifications">
+        {% icon 'bell' 'nav-icon' %}
+        {% if unread_notification_count %}
+          <span class="badge-dot">{{ unread_notification_count }}</span>
+        {% endif %}
+      </button>
+      <div class="dropdown-panel" id="notif-panel">
+        <div class="dropdown-header">Notifications</div>
+        {% for note in recent_notifications %}
+          <a class="dropdown-item" href="{% url 'notifications:mark_read' note.pk %}">
+            <div class="font-medium">{{ note.message }}</div>
+            <div class="text-xs text-muted">{{ note.created_at|timesince }} ago</div>
+          </a>
+        {% empty %}
+          <div class="dropdown-item text-muted">You're all caught up.</div>
+        {% endfor %}
+        <a class="dropdown-item text-sm font-semibold" href="{% url 'notifications:list' %}">View all notifications</a>
+      </div>
+    </div>
+
+    <a class="icon-btn" href="https://code.claude.com/docs/en/claude-code-on-the-web" target="_blank" rel="noopener" aria-label="Help" title="Documentation">
+      {% icon 'question' 'nav-icon' %}
+    </a>
+
+    <div class="relative">
+      <button class="user-menu-trigger" data-dropdown-toggle="user-panel" type="button">
+        <span class="avatar">{{ user.initials }}</span>
+        <span>
+          <span class="user-name" style="display:block;">{{ user.get_full_name|default:user.email }}</span>
+          <span class="user-role" style="display:block;">{% if active_membership %}{{ active_membership.get_role_display }}{% elif user.is_superuser %}Platform Administrator{% endif %}</span>
+        </span>
+        {% icon 'chevron-down' 'nav-icon' %}
+      </button>
+      <div class="dropdown-panel" id="user-panel">
+        <a class="dropdown-item" href="{% url 'accounts:profile' %}">{% icon 'user' 'nav-icon' %} Profile</a>
+        <a class="dropdown-item" href="{% url 'tenancy:organisation_list' %}">{% icon 'org' 'nav-icon' %} Switch organisation</a>
+        {% if user.is_staff %}<a class="dropdown-item" href="/admin/">{% icon 'settings' 'nav-icon' %} Admin</a>{% endif %}
+        <a class="dropdown-item" href="{% url 'accounts:logout' %}">{% icon 'logout' 'nav-icon' %} Log out</a>
+      </div>
+    </div>
+  </div>
+</header>

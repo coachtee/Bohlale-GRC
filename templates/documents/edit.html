@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Edit — {{ document.title }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Edit {{ document.title }}</h1><p class="subtitle">v{{ document.version_label }}</p></div></div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      <label for="{{ form.content.id_for_label }}">Content</label>
+      {{ form.content }}
+    </div>
+    <div class="form-row">
+      <label for="{{ form.change_reason.id_for_label }}">Change reason</label>
+      {{ form.change_reason }}
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-secondary" href="{% url 'documents:detail' document.pk %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

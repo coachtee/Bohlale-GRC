@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Reports — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Reports</h1><p class="subtitle">Export-ready reports across every module.</p></div></div>
+<div class="grid grid-3">
+  {% for r in reports %}
+  <a class="card" href="{% url r.url %}" style="display:block;">
+    <div class="flex items-center gap-2">{% icon 'report' 'nav-icon' %}<h3 class="mb-0">{{ r.name }}</h3></div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

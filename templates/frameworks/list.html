@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Frameworks — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Frameworks</h1>
+    <p class="subtitle">Standards and obligations {{ active_organisation.name }} is tracking, plus custom/imported frameworks.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'frameworks:import_list' %}">{% icon 'upload' 'nav-icon' %} Framework Studio</a>
+</div>
+
+<div class="grid grid-3">
+  {% for row in rows %}
+  <div class="card">
+    <div class="card-title-row">
+      <h3>{{ row.framework.name }}</h3>
+      {% if row.framework.is_global %}<span class="badge badge-outline">Built-in</span>{% else %}<span class="badge badge-blue">Custom</span>{% endif %}
+    </div>
+    <p class="text-sm text-secondary">{{ row.framework.description|truncatewords:22 }}</p>
+    {% if row.adopted %}
+      <div class="progress-row">
+        <div class="progress-row-label"><span>Progress</span><span>{{ row.progress }}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width: {{ row.progress }}%;"></div></div>
+      </div>
+      <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:detail' row.framework.pk %}">Open</a>
+    {% else %}
+      <form method="post" action="{% url 'frameworks:adopt' row.framework.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-primary btn-sm" type="submit">Start tracking</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

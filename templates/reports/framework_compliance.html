@@ -1,0 +1,16 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Framework Compliance Report — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Framework Compliance Report{% endblock %}
+{% block report_subtitle %}{{ active_organisation.name }}{% endblock %}
+{% block report_content %}
+<table class="data-table">
+  <thead><tr><th>Framework</th><th>Progress</th></tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr><td>{{ row.framework.name }}</td><td>{{ row.progress }}%</td></tr>
+  {% empty %}
+    <tr><td colspan="2" class="text-muted">No frameworks adopted yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

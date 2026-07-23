@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Incidents — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Incidents</h1><p class="subtitle">Report and track information security and operational incidents.</p></div>
+  <div class="flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'incidents:change_event_list' %}">Change Events</a>
+    <a class="btn btn-primary" href="{% url 'incidents:create' %}">{% icon 'alert' 'nav-icon' %} Report incident</a>
+  </div>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Discovered</th></tr></thead>
+    <tbody>
+    {% for incident in incidents %}
+      <tr>
+        <td>{{ incident.reference_code }}</td>
+        <td><a href="{% url 'incidents:detail' incident.pk %}">{{ incident.title }}</a></td>
+        <td>
+          {% if incident.severity == 'critical' or incident.severity == 'high' %}<span class="badge badge-red">{{ incident.get_severity_display }}</span>
+          {% elif incident.severity == 'medium' %}<span class="badge badge-amber">Medium</span>
+          {% else %}<span class="badge badge-green">Low</span>{% endif %}
+        </td>
+        <td><span class="badge badge-outline">{{ incident.get_status_display }}</span></td>
+        <td>{{ incident.discovered_at|date:"d M Y"|default:"—" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-muted">No incidents reported.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

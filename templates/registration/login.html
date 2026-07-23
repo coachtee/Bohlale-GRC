@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Sign in — Bohlale GRC{% endblock %}
+{% block guest_content %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="brand-mark" style="width:38px;height:38px;background:#0d0d0d;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;">B</div>
+      <div>
+        <div style="font-weight:700;">BOHLALE GRC</div>
+        <div class="text-xs text-muted">Govern. Protect. Comply.</div>
+      </div>
+    </div>
+    <h2>Sign in</h2>
+    <p class="text-secondary text-sm mb-3">Your governance, risk &amp; compliance workspace.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-errors mb-2">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="form-row">
+        <label for="{{ form.username.id_for_label }}">Email address</label>
+        {{ form.username }}
+        {% if form.username.errors %}<div class="form-errors">{{ form.username.errors }}</div>{% endif %}
+      </div>
+      <div class="form-row">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        {% if form.password.errors %}<div class="form-errors">{{ form.password.errors }}</div>{% endif %}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+    </form>
+    <p class="text-xs text-muted mb-0" style="margin-top:18px;">
+      Demo tenant available — see README for the seeded NIBS demo login.
+    </p>
+  </div>
+</div>
+{% endblock %}

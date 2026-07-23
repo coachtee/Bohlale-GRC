@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ event.get_event_type_display }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>{{ event.get_event_type_display }}</h1><p class="subtitle">Reported {{ event.created_at|date:"d M Y" }} by {{ event.reported_by|default:"—" }}</p></div></div>
+
+<div class="card mb-3">
+  <h3>Description</h3>
+  <p class="text-sm text-secondary">{{ event.description|default:"—" }}</p>
+</div>
+
+{% if event.suggestions %}
+<div class="card mb-3">
+  <h3 class="flex items-center gap-2">{% icon 'info' 'nav-icon' %} Consider reviewing</h3>
+  <div class="flex gap-2" style="flex-wrap:wrap;">
+    {% for label, url_name in event.suggestions %}
+      <a class="btn btn-sm btn-secondary" href="{% url url_name %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if event.status != 'reviewed' and event.status != 'closed' %}
+<div class="card">
+  <h3>Mark as reviewed</h3>
+  <form method="post" action="{% url 'incidents:change_event_mark_reviewed' event.pk %}">
+    {% csrf_token %}
+    <textarea name="review_notes" class="form-textarea" rows="3" placeholder="What was reviewed / changed as a result?"></textarea>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Mark reviewed</button></div>
+  </form>
+</div>
+{% else %}
+<div class="card"><h3>Review notes</h3><p class="text-sm text-secondary">{{ event.review_notes|default:"—" }}</p></div>
+{% endif %}
+{% endblock %}

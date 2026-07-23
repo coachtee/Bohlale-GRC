@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Request information — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Request information</h1><p class="subtitle">{% if step %}For: {{ step.title }}{% else %}Ask a stakeholder for information you don't have yet.{% endif %}</p></div></div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Send request</button>
+      <a class="btn btn-secondary" href="{% url 'journeys:information_request_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

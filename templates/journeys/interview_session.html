@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Guided interview — {{ session.step.title }}{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1 class="flex items-center gap-2">{% icon 'sparkle' 'nav-icon' %} Guided interview</h1><p class="subtitle">{{ session.step.title }}</p></div>
+</div>
+
+<div class="card mb-3">
+  {% for exchange in exchanges %}
+    <div class="mb-3">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="avatar" style="width:26px;height:26px;font-size:0.6rem;">AI</span>
+        <div class="text-sm font-medium">{{ exchange.question_text }}</div>
+      </div>
+      {% if exchange.answer_text %}
+        <div class="flex items-center gap-2" style="margin-left:34px;">
+          <div class="text-sm text-secondary" style="background:var(--color-grey-100);padding:8px 12px;border-radius:10px;">{{ exchange.answer_text }}</div>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  {% if next_exchange %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row">
+        {{ form.answer_text }}
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Send answer</button>
+      </div>
+    </form>
+  {% else %}
+    <div class="message success">All questions answered. Your Knowledge Profile has been updated with these verified facts.</div>
+    <a class="btn btn-primary" href="{% url 'journeys:journey_home' %}">Back to journey</a>
+  {% endif %}
+</div>
+{% endblock %}

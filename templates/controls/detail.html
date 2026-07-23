@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ control.name }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ control.name }}</h1><p class="subtitle">{{ control.reference_code }}</p></div>
+  <a class="btn btn-secondary" href="{% url 'controls:edit' control.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+</div>
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>Description</h3>
+    <p class="text-sm text-secondary">{{ control.description|default:"—" }}</p>
+    <div class="divider"></div>
+    <p class="text-xs text-muted mb-1">IMPLEMENTATION NOTES</p>
+    <p class="text-sm">{{ control.implementation_notes|default:"Not documented yet." }}</p>
+    <div class="divider"></div>
+    <p class="text-xs text-muted mb-1">FRAMEWORK MAPPINGS</p>
+    {% for req in control.framework_requirements.all %}<span class="badge badge-outline">{{ req.framework.code }} {{ req.ref_code }}</span> {% empty %}<span class="text-sm text-muted">None mapped.</span>{% endfor %}
+  </div>
+  <div>
+    <div class="card mb-3">
+      <h3>Status</h3>
+      <div class="text-sm"><strong>Owner:</strong> {{ control.owner|default:"—" }}</div>
+      <div class="text-sm"><strong>Implementation:</strong> {{ control.get_implementation_status_display }}</div>
+      <div class="text-sm"><strong>Effectiveness:</strong> {{ control.get_effectiveness_display }}</div>
+    </div>
+    <div class="card">
+      <h3>Linked risks</h3>
+      {% for risk in control.risks.all %}<div class="list-row"><div class="list-row-title text-sm">{{ risk.title }}</div></div>{% empty %}<p class="text-sm text-muted">None linked.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

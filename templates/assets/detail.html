@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ asset.name }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ asset.name }}</h1><p class="subtitle">{{ asset.reference_code }} · {{ asset.get_asset_type_display }}</p></div>
+  <a class="btn btn-secondary" href="{% url 'assets:edit' asset.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+</div>
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>Description</h3>
+    <p class="text-sm text-secondary">{{ asset.description|default:"—" }}</p>
+  </div>
+  <div>
+    <div class="card mb-3">
+      <h3>Details</h3>
+      <div class="text-sm"><strong>Owner:</strong> {{ asset.owner|default:"—" }}</div>
+      <div class="text-sm"><strong>Classification:</strong> {{ asset.get_classification_display }}</div>
+      <div class="text-sm"><strong>Location:</strong> {{ asset.location|default:"—" }}</div>
+      <div class="text-sm"><strong>Process:</strong> {{ asset.related_process|default:"—" }}</div>
+      <div class="text-sm"><strong>Status:</strong> {{ asset.get_status_display }}</div>
+    </div>
+    <div class="card">
+      <h3>Linked risks</h3>
+      {% for r in asset.related_risks.all %}<div class="list-row"><div class="list-row-title text-sm">{{ r.title }}</div></div>{% empty %}<p class="text-sm text-muted">None linked.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Knowledge Profile — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Organisation Knowledge Profile</h1>
+    <p class="subtitle">The contextual foundation for AI assistance. Verified facts are prioritised over AI suggestions.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'knowledge:item_create' %}">{% icon 'plus' 'nav-icon' %} Add fact</a>
+</div>
+
+<div class="card mb-3">
+  <div class="progress-row" style="margin-bottom:0;">
+    <div class="progress-row-label"><span>Profile completeness</span><span>{{ completeness }}%</span></div>
+    <div class="progress-track"><div class="progress-fill{% if completeness < 40 %} red{% elif completeness < 75 %} amber{% else %} green{% endif %}" style="width: {{ completeness }}%;"></div></div>
+  </div>
+</div>
+
+{% for key, group in grouped.items %}
+  {% if group.items %}
+  <div class="card mb-3">
+    <div class="card-title-row"><h3>{{ group.label }}</h3><span class="text-xs text-muted">{{ group.items|length }} item{{ group.items|length|pluralize }}</span></div>
+    {% for item in group.items %}
+      <div class="list-row">
+        <div class="list-row-main">
+          {% if item.status == 'verified' %}<span class="status-dot green" style="margin-top:6px;"></span>
+          {% elif item.status == 'ai_inference' %}<span class="status-dot amber" style="margin-top:6px;"></span>
+          {% else %}<span class="status-dot grey" style="margin-top:6px;"></span>{% endif %}
+          <div>
+            <div class="list-row-title">{{ item.label }}</div>
+            <div class="list-row-meta">{{ item.value|default:"Not yet captured" }}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if item.status == 'verified' %}<span class="badge badge-green">Verified</span>
+          {% elif item.status == 'ai_inference' %}<span class="badge badge-amber">AI Inference</span>
+          {% else %}<span class="badge badge-grey">Missing</span>{% endif %}
+          {% if item.status != 'verified' %}
+          <form method="post" action="{% url 'knowledge:item_verify' item.pk %}">{% csrf_token %}<button class="btn btn-sm btn-secondary" type="submit">Verify</button></form>
+          {% endif %}
+          <a class="btn btn-sm btn-secondary" href="{% url 'knowledge:item_edit' item.pk %}">Edit</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Asset Register — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Asset Register</h1><p class="subtitle">Information assets, systems, applications, hardware and data repositories.</p></div>
+  <a class="btn btn-primary" href="{% url 'assets:create' %}">{% icon 'plus' 'nav-icon' %} Add asset</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Classification</th><th>Owner</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for asset in assets %}
+      <tr>
+        <td>{{ asset.reference_code }}</td>
+        <td><a href="{% url 'assets:detail' asset.pk %}">{{ asset.name }}</a></td>
+        <td>{{ asset.get_asset_type_display }}</td>
+        <td><span class="badge badge-outline">{{ asset.get_classification_display }}</span></td>
+        <td>{{ asset.owner|default:"—" }}</td>
+        <td>{% if asset.status == 'active' %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-grey">{{ asset.get_status_display }}</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-muted">No assets recorded yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

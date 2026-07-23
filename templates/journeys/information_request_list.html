@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Information Requests — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Information Requests</h1><p class="subtitle">Questions assigned to stakeholders across the organisation.</p></div>
+  <a class="btn btn-primary" href="{% url 'journeys:information_request_create' %}">{% icon 'plus' 'nav-icon' %} Request information</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Question</th><th>Assigned to</th><th>Status</th><th>Requested</th></tr></thead>
+    <tbody>
+    {% for r in requests %}
+      <tr>
+        <td>{{ r.question_text|truncatewords:15 }}</td>
+        <td>{{ r.assigned_to_user|default:r.assigned_role_label|default:r.assigned_email }}</td>
+        <td>{% if r.status == 'answered' %}<span class="badge badge-green">Answered</span>{% else %}<span class="badge badge-amber">Pending</span>{% endif %}</td>
+        <td>{{ r.created_at|date:"d M Y" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="text-muted">No information requests yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

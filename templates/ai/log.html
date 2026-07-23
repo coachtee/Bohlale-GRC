@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}AI Generation Log — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>AI Generation Log</h1>
+    <p class="subtitle">Every AI-assisted draft, with provider, purpose and human review status — for full traceability (spec §38).</p>
+  </div>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Date</th><th>Purpose</th><th>Provider / Model</th><th>Requested by</th><th>Review status</th></tr></thead>
+    <tbody>
+    {% for gen in generations %}
+      <tr>
+        <td>{{ gen.created_at|date:"d M Y H:i" }}</td>
+        <td><a href="{% url 'ai:detail' gen.pk %}">{{ gen.purpose }}</a></td>
+        <td>{{ gen.provider }} / {{ gen.model }}</td>
+        <td>{{ gen.requested_by|default:"System" }}</td>
+        <td>
+          {% if gen.review_status == 'approved' or gen.review_status == 'edited' %}<span class="badge badge-green">{{ gen.get_review_status_display }}</span>
+          {% elif gen.review_status == 'rejected' %}<span class="badge badge-red">{{ gen.get_review_status_display }}</span>
+          {% else %}<span class="badge badge-amber">{{ gen.get_review_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-muted">No AI generations yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

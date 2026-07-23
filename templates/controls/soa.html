@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Statement of Applicability — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Statement of Applicability</h1>
+    <p class="subtitle">{{ framework.name }} — {{ coverage }}% of applicable controls implemented.</p>
+  </div>
+  <div class="flex gap-2">
+    {% if frameworks.count > 1 %}
+    <form method="get">
+      <select name="framework" class="form-select" onchange="this.form.submit()">
+        {% for fw in frameworks %}<option value="{{ fw.pk }}" {% if fw.pk == framework.pk %}selected{% endif %}>{{ fw.name }}</option>{% endfor %}
+      </select>
+    </form>
+    {% endif %}
+    <a class="btn btn-secondary" href="{% url 'controls:soa_export_csv' %}?framework={{ framework.pk }}">{% icon 'download' 'nav-icon' %} Export CSV</a>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Control</th><th>Applicable?</th><th>Justification</th><th>Status</th><th>Owner</th><th></th></tr></thead>
+    <tbody>
+    {% for entry in entries %}
+      <tr>
+        <td>{{ entry.control.name }}</td>
+        <td>{% if entry.applicable %}<span class="badge badge-green">Yes</span>{% else %}<span class="badge badge-grey">No</span>{% endif %}</td>
+        <td class="text-sm">{{ entry.justification|truncatewords:12|default:"—" }}</td>
+        <td>{{ entry.control.get_implementation_status_display }}</td>
+        <td>{{ entry.control.owner|default:"—" }}</td>
+        <td><button class="btn btn-sm btn-secondary" data-dropdown-toggle="soa-edit-{{ entry.pk }}" type="button">Edit</button></td>
+      </tr>
+      <tr id="soa-edit-{{ entry.pk }}" class="dropdown-panel" style="position:static;display:none;width:100%;box-shadow:none;">
+        <td colspan="6">
+          <form method="post" action="{% url 'controls:soa_entry_update' entry.pk %}" class="mb-2" style="padding:12px;">
+            {% csrf_token %}
+            <div class="grid grid-3">
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="applicable" class="checkbox-input" {% if entry.applicable %}checked{% endif %}> Applicable</label>
+              <select name="implementation_status" class="form-select">
+                <option value="not_implemented" {% if entry.control.implementation_status == 'not_implemented' %}selected{% endif %}>Not Implemented</option>
+                <option value="partially_implemented" {% if entry.control.implementation_status == 'partially_implemented' %}selected{% endif %}>Partially Implemented</option>
+                <option value="implemented" {% if entry.control.implementation_status == 'implemented' %}selected{% endif %}>Implemented</option>
+                <option value="not_applicable" {% if entry.control.implementation_status == 'not_applicable' %}selected{% endif %}>Not Applicable</option>
+              </select>
+              <button class="btn btn-primary btn-sm" type="submit">Save</button>
+            </div>
+            <textarea name="justification" class="form-textarea" rows="2" placeholder="Justification" style="margin-top:8px;">{{ entry.justification }}</textarea>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-muted">No controls yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+document.querySelectorAll('[data-dropdown-toggle^="soa-edit-"]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = btn.getAttribute('data-dropdown-toggle');
+    var row = document.getElementById(id);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  });
+});
+</script>
+{% endblock %}
