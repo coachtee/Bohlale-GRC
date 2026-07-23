@@ -52,10 +52,6 @@ class ManagementReview(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} — {self.meeting_date}"
 
-    def save(self, *args, **kwargs):
-        self.assign_reference_code()
-        super().save(*args, **kwargs)
-
     @property
     def inputs_covered_count(self):
         return self.input_records.filter(covered=True).count()

@@ -56,10 +56,6 @@ class Evidence(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} {self.name}"
 
-    def save(self, *args, **kwargs):
-        self.assign_reference_code()
-        super().save(*args, **kwargs)
-
     @property
     def is_expired(self):
         from django.utils import timezone

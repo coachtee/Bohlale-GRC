@@ -60,10 +60,6 @@ class Audit(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} {self.title}"
 
-    def save(self, *args, **kwargs):
-        self.assign_reference_code()
-        super().save(*args, **kwargs)
-
     @property
     def open_major_findings_count(self):
         return self.findings.filter(severity="major_nonconformity").exclude(status="closed").count()

@@ -55,10 +55,6 @@ class Assessment(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} {self.name}"
 
-    def save(self, *args, **kwargs):
-        self.assign_reference_code()
-        super().save(*args, **kwargs)
-
     @property
     def completion_percent(self):
         total = self.results.count()

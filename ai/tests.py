@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -7,6 +9,7 @@ from tenancy.models import Membership, Organisation
 from . import service
 from .models import STATUS_APPROVED, STATUS_PENDING, AIGeneration
 from .providers.mock import MockProvider
+from .providers.openai_compatible import OpenAICompatibleProvider
 
 
 class MockProviderTests(TestCase):
@@ -23,6 +26,31 @@ class MockProviderTests(TestCase):
         provider = MockProvider()
         output = provider.complete(system_prompt="sys", user_prompt="hello", purpose="something_new")
         self.assertIn("hello", output)
+
+
+class OpenAICompatibleProviderFailureTests(TestCase):
+    """The system must remain functional (never crash a request) when
+    a configured real AI provider is unreachable (spec §10: "graceful
+    behaviour when the provider is unavailable")."""
+
+    def test_network_failure_returns_placeholder_instead_of_raising(self):
+        provider = OpenAICompatibleProvider(base_url="https://unreachable.invalid", api_key="x", model="m")
+        with patch("ai.providers.openai_compatible.requests.post", side_effect=ConnectionError("boom")):
+            output = provider.complete(system_prompt="sys", user_prompt="hello", purpose="general")
+        self.assertIn("unavailable", output.lower())
+
+    def test_non_200_response_returns_placeholder_instead_of_raising(self):
+        import requests
+
+        provider = OpenAICompatibleProvider(base_url="https://api.example.invalid", api_key="x", model="m")
+
+        class _BadResponse:
+            def raise_for_status(self):
+                raise requests.HTTPError("500 server error")
+
+        with patch("ai.providers.openai_compatible.requests.post", return_value=_BadResponse()):
+            output = provider.complete(system_prompt="sys", user_prompt="hello", purpose="general")
+        self.assertIn("unavailable", output.lower())
 
 
 @override_settings(AI_PROVIDER="mock")

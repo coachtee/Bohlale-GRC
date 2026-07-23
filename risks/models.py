@@ -104,7 +104,6 @@ class Risk(ReferenceCodeMixin, TenantScopedModel):
         return f"{self.reference_code} {self.title}"
 
     def save(self, *args, **kwargs):
-        self.assign_reference_code()
         self.inherent_risk_score = self.likelihood * self.impact
         if self.residual_likelihood and self.residual_impact:
             self.residual_risk_score = self.residual_likelihood * self.residual_impact

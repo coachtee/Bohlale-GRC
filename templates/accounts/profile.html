@@ -18,4 +18,16 @@
     </div>
   </form>
 </div>
+
+<div class="card" style="margin-top:18px;">
+  <h3>Your data</h3>
+  <p class="text-sm text-secondary mb-2">
+    Download the personal information Bohlale GRC holds about your account, or
+    deactivate your account.
+  </p>
+  <div class="flex gap-2">
+    <a class="btn btn-secondary btn-sm" href="{% url 'accounts:export_my_data' %}">Download my data</a>
+    <a class="btn btn-secondary btn-sm" href="{% url 'accounts:deactivate_account' %}">Deactivate account</a>
+  </div>
+</div>
 {% endblock %}

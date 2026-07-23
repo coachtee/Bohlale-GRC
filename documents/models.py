@@ -99,10 +99,6 @@ class Document(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} {self.title}"
 
-    def save(self, *args, **kwargs):
-        self.assign_reference_code()
-        super().save(*args, **kwargs)
-
     def content_hash(self):
         return hashlib.sha256(self.content.encode("utf-8")).hexdigest()
 
