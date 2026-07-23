@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Approval — {{ document.title }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1 class="flex items-center gap-2">{% icon 'shield-check' 'nav-icon' %} Review &amp; sign</h1><p class="subtitle">{{ document.title }} — v{{ document.version_label }}</p></div></div>
+
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>Document content</h3>
+    <pre style="white-space:pre-wrap;font-family:inherit;font-size:0.86rem;">{{ document.content }}</pre>
+  </div>
+
+  <div>
+    <div class="card mb-3">
+      <h3>Details</h3>
+      <div class="text-sm"><strong>Reference:</strong> {{ document.reference_code }}</div>
+      <div class="text-sm"><strong>Version:</strong> {{ document.version_label }}</div>
+      <div class="text-sm"><strong>Content hash:</strong> <span class="text-xs" style="word-break:break-all;">{{ document.content_hash }}</span></div>
+      <div class="text-sm"><strong>Owner:</strong> {{ document.owner|default:"—" }}</div>
+    </div>
+
+    {% if approval_request.status == 'pending' %}
+    <div class="card">
+      <h3>Electronic sign-off</h3>
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="form-row">
+            {% if field.name != 'consent' %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
+            {% if field.name == 'consent' %}
+              <label class="flex items-center gap-2 text-sm"><span>{{ field }}</span> {{ field.label }}</label>
+            {% else %}
+              {{ field }}
+            {% endif %}
+            {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        <button class="btn btn-primary btn-block" type="submit">Sign &amp; record decision</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="card">
+      <h3>Decision recorded</h3>
+      {% for sig in approval_request.signatures.all %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <div>
+              <div class="list-row-title">{{ sig.typed_signature }} ({{ sig.role }})</div>
+              <div class="list-row-meta">{{ sig.get_decision_display }} · {{ sig.created_at|date:"d M Y H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

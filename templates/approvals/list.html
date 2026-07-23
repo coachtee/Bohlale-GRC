@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Approvals — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Approvals</h1><p class="subtitle">Documents and records awaiting electronic sign-off.</p></div></div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Item</th><th>Requested by</th><th>Status</th><th>Requested</th><th></th></tr></thead>
+    <tbody>
+    {% for r in requests %}
+      <tr>
+        <td>{{ r.target }}</td>
+        <td>{{ r.requested_by|default:"—" }}</td>
+        <td>
+          {% if r.status == 'approved' %}<span class="badge badge-green">Approved</span>
+          {% elif r.status == 'rejected' %}<span class="badge badge-red">Rejected</span>
+          {% else %}<span class="badge badge-amber">Pending</span>{% endif %}
+        </td>
+        <td>{{ r.created_at|date:"d M Y" }}</td>
+        <td><a class="btn btn-sm btn-secondary" href="{% url 'approvals:detail' r.pk %}">Open</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-muted">Nothing awaiting approval.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

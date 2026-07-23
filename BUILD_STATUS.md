@@ -1,6 +1,6 @@
 # Bohlale GRC — Build Status
 
-**Last updated:** 2026-07-23 (session 1, foundation)
+**Last updated:** 2026-07-23 (session 1, mid-build — through `journeys` app)
 **Branch:** `claude/bohlale-grc-build-nki122`
 
 > Read this file fully before resuming work. Then read `BOHLALE_GRC_MASTER_SPEC.md`, inspect the repo tree, check `git log`, and run `python manage.py test`. Continue from "Exact next recommended task" at the bottom — do not restart completed modules.
@@ -17,27 +17,38 @@
 
 ## Completed modules
 
-_(none yet — foundation session in progress)_
+- **Foundation**: `config/settings.py` (env-driven, SQLite dev / Postgres prod), design-system CSS + base templates matching the dashboard mockup, htmx vendored locally, self-authored icon set.
+- **accounts**: custom email-based `User` model, login/logout/profile. Tests: login success/failure, display name/initials.
+- **tenancy**: `Organisation`/`Membership`/`OrganisationInvite` models, row-level multi-tenant `TenantMiddleware`, RBAC roles + permission helpers (`core/permissions.py`), org create/list/switch, member invite. Tests cover tenant isolation (cross-org access returns 404) and RBAC (read-only can't invite).
+- **activity**: immutable `AuditLog` + `log_activity()` used by every other app. Admin is read-only.
+- **notifications**: in-app + email `Notification`, topbar bell, mark-read/mark-all-read.
+- **knowledge**: `KnowledgeItem` (Verified/AI Inference/Missing per spec §10), profile view grouped by category, verify action, `verified_context_text()` used as AI context.
+- **ai**: `AIProvider` abstraction — `MockProvider` (default, offline, deterministic templated drafts per purpose) and `OpenAICompatibleProvider` (works with OpenAI- and Qwen-compatible endpoints via `AI_API_BASE`). `AIGeneration` governance/traceability model (spec §38). `ai.service.generate()` is the single entry point every app uses.
+- **frameworks**: `Framework`/`Domain`/`Requirement`/`AssessmentQuestion`/`EvidenceExpectation`, `FrameworkAdoption` + `RequirementStatus` (progress tracking), Framework Studio (upload/paste → heading-detection extraction + AI summary → human-editable JSON review → publish). `seed_frameworks` management command creates global ISO 27001 / POPIA / King IV / SABS ISO 9001 skeletons (original text only, see Assumption 5).
+- **journeys**: `JourneyTemplate`/`JourneyStep` (guided implementation engine, spec §8), `OrganisationJourney`/`StepProgress` (the "project" per Assumption 2) with auto-advancing current step and a PDCA stage stepper (`stage_summary()`). Full onboarding wizard (spec §7, all 9 goal options wired). AI Guided Interview Engine (spec §11) — per-step question sequence writing VERIFIED facts to the Knowledge Profile. Information Request Engine (spec §12) — in-app assignment to members, or secure single-use token link for external recipients, feeding AI-Inference facts. `seed_journey_templates` creates a hand-authored 13-step ISO 27001 "Build an ISMS from Scratch" template covering the full §47 demo path, plus auto-generated templates for the other 3 built-in frameworks.
+  - Manually verified end-to-end via dev server: create org → onboarding wizard → ISO 27001 journey → guided interview → Knowledge Profile updated.
+  - Not yet wired: the "document" step_type's "Generate draft document" button (`documents:generate_for_step`) — depends on the `documents` app, in progress now.
 
 ## Partially completed modules
 
-- **Repository scaffolding** — `BOHLALE_GRC_MASTER_SPEC.md`, `BUILD_STATUS.md`, `README.md`, `CHANGELOG.md`, `.env.example` created. Django project (`config`) and 23 apps scaffolded via `startapp` (empty boilerplate only, not yet wired into `INSTALLED_APPS` or built out).
+- None currently mid-build (see "Exact next recommended task" — `documents` + `approvals` are next).
 
 ## Incomplete modules
 
-Everything else in the spec: settings/design system, accounts, tenancy/RBAC, activity/audit log, notifications, knowledge profile, AI service layer, frameworks engine + Framework Studio, journeys/guided implementation/onboarding/interview/info-request engine, documents + approvals (e-signature), risks, controls + SoA, evidence, assessments, assets, suppliers, incidents + change events, registers, audits, actions (corrective actions), reviews (management review), reports, dashboard UI, NIBS demo seed data, test suite, deployment docs.
+documents, approvals, risks, controls (+ SoA), evidence, assessments, assets, suppliers, incidents (+ change events), registers, audits, actions (corrective actions), reviews (management review), reports, full dashboard (`core/dashboard.py` is still a stub), NIBS demo seed data (`seed_nibs_demo`), deployment docs (`DEPLOYMENT.md`), final requirement-by-requirement audit.
 
 ## Database migrations
 
-None generated yet (no models written).
+All migrations up to and including `journeys.0001_initial` are generated and applied cleanly against SQLite. Run `python manage.py showmigrations` to confirm current state; `python manage.py migrate` is safe to re-run.
 
 ## Tests
 
-None written yet. Target: every app ships model tests + tenant-isolation tests + permission tests + at least one view smoke test.
+56 tests passing (`python manage.py test`) across accounts, tenancy, activity, notifications, knowledge, ai, frameworks, journeys. Coverage focus per app: model correctness, tenant isolation (cross-org access blocked), RBAC (role-gated actions), and at least one full-flow integration test (onboarding wizard, interview flow, information request flow).
 
 ## Known issues
 
-None yet.
+- `journeys/templates/journeys/journey_home.html`'s "Generate draft document" action link (`documents:generate_for_step`) resolves to `#` until the `documents` app is built (uses `safe_url` so it degrades gracefully rather than 500ing).
+- Sidebar nav links for not-yet-built apps (risks, controls, evidence, incidents, registers, audits, actions, reports) currently resolve to `#` via the same `safe_url` mechanism — expected, not a bug; each will start working the moment that app's urls.py defines the matching name (see per-app "Exact next recommended task" convention: use `list`/`hub` as the primary landing URL name).
 
 ## Assumptions made (documented per working instruction #24)
 
@@ -53,4 +64,11 @@ None yet.
 
 ## Exact next recommended task
 
-Proceed with **Task: Core project settings & design system** (config/settings.py env-driven config; base template + CSS design system matching the provided dashboard mockup; vendor htmx.js locally under static/). Then **accounts** (custom User) and **tenancy** (Organisation/Membership/middleware/RBAC) — these three are foundational and everything else depends on them. Continue strictly in the module order listed in the task list maintained for this build (see commit history / this file's "Completed modules" section as it grows) — do not skip ahead into UI-heavy modules before tenancy + RBAC + audit logging exist, since every later app depends on `TenantScopedModel`, `log_activity()`, and the base templates.
+Build the **`documents` + `approvals` apps** next (spec §13–§16):
+1. `documents.Document` / `documents.DocumentVersion` models — fields per spec §14 (title, doc_type, reference_number, version, owner, author, approver, dates, classification, status: Draft/Under Review/Awaiting Approval/Approved/Published/Superseded/Archived, M2M to frameworks/requirements/controls/risks/incidents, file attachment).
+2. `documents:generate_for_step` view — the glue journeys already links to (`journeys/templates/journeys/journey_home.html` calls `safe_url 'documents:generate_for_step' focus_step.pk`): takes a `journeys.JourneyStep`, builds an AI prompt from `knowledge.services.verified_context_text(org)` + the step's guidance, calls `ai.service.generate(purpose="isms_scope"` or `"document_draft"`, ...)`, creates a Draft `Document` with the AI output as content, links `ai.AIGeneration.related_object` to it, and redirects into the document review UI.
+3. `approvals.ApprovalRequest` / `approvals.Signature` — native e-signature workflow per spec §16 (typed signature + consent checkbox + timestamp + IP + document hash + audit event). Wire Document status transitions: Draft → Under Review → Awaiting Approval → Approved (via Signature) → Published.
+4. Once published, call `journeys.services.mark_step_complete(...)` (or leave the user to click "Mark step complete" — either is fine, but document the choice) so the ISMS Scope / Information Security Policy steps in the ISO 27001 demo journey actually close the loop end-to-end per §47.
+5. Tests: version history, status transitions, tenant isolation, e-signature immutability (a Signature/AIGeneration record must never be editable after creation), and — important — confirm AI-generated content never auto-transitions to Approved/Published without a human `Signature`.
+
+After documents+approvals: risks → controls (+SoA) → evidence → assessments → assets/suppliers → incidents (+change events) → registers → audits → actions → reviews → reports → full dashboard → NIBS demo seed → final audit. This order matches the task list maintained for this build session; each app's sidebar link in `templates/core/_sidebar.html` already points at the URL name it should expose (e.g. `risks:list`, `controls:soa` referenced from `journey_home.html`, `reports:readiness`) — use those exact names so links that are currently `#` start resolving automatically.

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ document.title }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ document.title }}</h1>
+    <p class="subtitle">{{ document.reference_code }} · v{{ document.version_label }} · {{ document.get_doc_type_display }}</p>
+  </div>
+  <div class="flex gap-2">
+    {% if document.status == 'draft' %}<span class="badge badge-outline">Draft</span>
+    {% elif document.status == 'under_review' %}<span class="badge badge-amber">Under Review</span>
+    {% elif document.status == 'awaiting_approval' %}<span class="badge badge-amber">Awaiting Approval</span>
+    {% elif document.status == 'approved' %}<span class="badge badge-blue">Approved</span>
+    {% elif document.status == 'published' %}<span class="badge badge-green">Published</span>
+    {% else %}<span class="badge badge-grey">{{ document.get_status_display }}</span>{% endif %}
+  </div>
+</div>
+
+{% if document.ai_generated %}
+<div class="message info mb-3">This document contains AI-generated content ({{ document.ai_generation.provider }}). It must be reviewed by a qualified human before approval — see the <a href="{% url 'ai:detail' document.ai_generation.pk %}">AI generation record</a>.</div>
+{% endif %}
+
+<div class="grid grid-main-side">
+  <div class="card">
+    <div class="card-title-row">
+      <h3>Content</h3>
+      {% if document.status == 'draft' or document.status == 'under_review' or document.status == 'published' %}
+        <a class="btn btn-sm btn-secondary" href="{% url 'documents:edit' document.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+      {% endif %}
+    </div>
+    <pre style="white-space:pre-wrap;font-family:inherit;font-size:0.86rem;">{{ document.content|default:"No content yet." }}</pre>
+  </div>
+
+  <div>
+    <div class="card mb-3">
+      <h3>Workflow</h3>
+      {% if document.status == 'draft' %}
+        <form method="post" action="{% url 'documents:submit_review' document.pk %}" class="mb-2">{% csrf_token %}<button class="btn btn-secondary btn-sm w-full" type="submit">Submit for review</button></form>
+        <form method="post" action="{% url 'documents:submit_approval' document.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm w-full" type="submit">Submit for approval</button></form>
+      {% elif document.status == 'under_review' %}
+        <form method="post" action="{% url 'documents:submit_approval' document.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm w-full" type="submit">Submit for approval</button></form>
+      {% elif document.status == 'awaiting_approval' %}
+        {% if pending_approval %}<a class="btn btn-primary btn-sm w-full" href="{% url 'approvals:detail' pending_approval.pk %}">Review &amp; sign</a>{% endif %}
+      {% elif document.status == 'approved' %}
+        {% if can_sign %}
+        <form method="post" action="{% url 'documents:publish' document.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm w-full" type="submit">Publish</button></form>
+        {% else %}<p class="text-sm text-muted">Approved — awaiting publish by an Administrator/Executive.</p>{% endif %}
+      {% elif document.status == 'published' %}
+        <p class="text-sm text-secondary">Published {{ document.effective_date|date:"d M Y" }}.</p>
+      {% endif %}
+    </div>
+
+    <div class="card mb-3">
+      <h3>Details</h3>
+      <div class="text-sm"><strong>Owner:</strong> {{ document.owner|default:"—" }}</div>
+      <div class="text-sm"><strong>Author:</strong> {{ document.author|default:"—" }}</div>
+      <div class="text-sm"><strong>Approver:</strong> {{ document.approver|default:"—" }}</div>
+      <div class="text-sm"><strong>Classification:</strong> {{ document.get_classification_display }}</div>
+      <div class="text-sm"><strong>Effective date:</strong> {{ document.effective_date|default:"—" }}</div>
+      <div class="text-sm"><strong>Next review:</strong> {{ document.next_review_date|default:"—" }}</div>
+    </div>
+
+    <div class="card">
+      <h3>Version history</h3>
+      {% for v in versions %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <div>
+              <div class="list-row-title">v{{ v.version_label }} — {{ v.get_status_at_snapshot_display }}</div>
+              <div class="list-row-meta">{{ v.changed_by|default:"System" }} · {{ v.created_at|date:"d M Y H:i" }}{% if v.change_reason %} · {{ v.change_reason }}{% endif %}</div>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-sm text-muted">No version history yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
