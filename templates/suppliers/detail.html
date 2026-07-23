@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ supplier.name }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ supplier.name }}</h1><p class="subtitle">{{ supplier.reference_code }} · {{ supplier.service }}</p></div>
+  <a class="btn btn-secondary" href="{% url 'suppliers:edit' supplier.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+</div>
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>Assessment notes</h3>
+    <p class="text-sm text-secondary">{{ supplier.assessment_notes|default:"—" }}</p>
+  </div>
+  <div class="card">
+    <h3>Details</h3>
+    <div class="text-sm"><strong>Owner:</strong> {{ supplier.owner|default:"—" }}</div>
+    <div class="text-sm"><strong>Criticality:</strong> {{ supplier.get_criticality_display }}</div>
+    <div class="text-sm"><strong>Data access:</strong> {{ supplier.data_access|yesno:"Yes,No" }}</div>
+    <div class="text-sm"><strong>Personal info access:</strong> {{ supplier.personal_info_access|yesno:"Yes,No" }}</div>
+    <div class="text-sm"><strong>Risk rating:</strong> {{ supplier.get_risk_rating_display }}</div>
+    <div class="text-sm"><strong>Contract review:</strong> {{ supplier.contract_review_date|default:"—" }}</div>
+    <div class="text-sm"><strong>Review date:</strong> {{ supplier.review_date|default:"—" }}</div>
+  </div>
+</div>
+{% endblock %}

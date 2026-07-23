@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Supplier Register — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Supplier Register</h1><p class="subtitle">Third parties with access to information or systems.</p></div>
+  <a class="btn btn-primary" href="{% url 'suppliers:create' %}">{% icon 'plus' 'nav-icon' %} Add supplier</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Supplier</th><th>Service</th><th>Criticality</th><th>Risk Rating</th><th>Review Date</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for s in suppliers %}
+      <tr>
+        <td>{{ s.reference_code }}</td>
+        <td><a href="{% url 'suppliers:detail' s.pk %}">{{ s.name }}</a></td>
+        <td>{{ s.service|default:"—" }}</td>
+        <td><span class="badge badge-outline">{{ s.get_criticality_display }}</span></td>
+        <td>
+          {% if s.risk_rating == 'high' %}<span class="badge badge-red">High</span>
+          {% elif s.risk_rating == 'medium' %}<span class="badge badge-amber">Medium</span>
+          {% else %}<span class="badge badge-green">Low</span>{% endif %}
+        </td>
+        <td>{% if s.is_review_overdue %}<span class="badge badge-red">Overdue</span>{% else %}{{ s.review_date|default:"—" }}{% endif %}</td>
+        <td><span class="badge badge-outline">{{ s.get_status_display }}</span></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No suppliers recorded yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
