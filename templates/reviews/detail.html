@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load icons nav %}
+{% block title %}{{ review.reference_code }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Management Review — {{ review.meeting_date|date:"d M Y" }}</h1><p class="subtitle">{{ review.reference_code }}</p></div>
+  {% if review.status != 'completed' %}
+  <form method="post" action="{% url 'reviews:complete' review.pk %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Mark complete</button></form>
+  {% else %}<span class="badge badge-green">Completed</span>{% endif %}
+</div>
+
+<div class="grid grid-main-side">
+  <div>
+    <div class="card mb-3">
+      <h3>Agenda</h3>
+      <p class="text-sm text-secondary">{{ review.agenda|default:"—" }}</p>
+    </div>
+    <div class="card mb-3">
+      <h3>Decisions &amp; actions</h3>
+      <p class="text-sm text-secondary">{{ review.decisions|default:"—" }}</p>
+      <a class="btn btn-sm btn-secondary" href="{% safe_url 'actions:create_from_review' review.pk %}">Create corrective action</a>
+    </div>
+    <div class="card">
+      <h3>Required inputs checklist</h3>
+      {% for record in inputs %}
+        <form method="post" action="{% url 'reviews:input_record_update' record.pk %}" class="list-row" style="align-items:flex-start;">
+          {% csrf_token %}
+          <div class="list-row-main">
+            <input type="checkbox" name="covered" class="checkbox-input" style="margin-top:4px;" {% if record.covered %}checked{% endif %}>
+            <div style="flex:1;">
+              <div class="list-row-title">{{ record.label }}</div>
+              <textarea name="notes" class="form-textarea" rows="1" placeholder="Notes">{{ record.notes }}</textarea>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-secondary" type="submit">Save</button>
+        </form>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <h3>Details</h3>
+    <div class="text-sm"><strong>Framework:</strong> {{ review.framework|default:"—" }}</div>
+    <div class="text-sm"><strong>Attendees:</strong> {{ review.attendees|default:"—"|linebreaksbr }}</div>
+    <div class="text-sm"><strong>Approved by:</strong> {{ review.approved_by|default:"—" }}</div>
+    <div class="text-sm"><strong>Inputs covered:</strong> {{ review.inputs_covered_count }}/{{ inputs|length }}</div>
+  </div>
+</div>
+{% endblock %}

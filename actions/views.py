@@ -104,6 +104,13 @@ def create_from_finding(request, pk):
 
 
 @require_editor
+def create_from_review(request, pk):
+    from reviews.models import ManagementReview
+
+    return _create_from_source(request, "management_review", ManagementReview, pk, description_attr="decisions")
+
+
+@require_editor
 def action_verify_close(request, pk):
     action = get_object_or_404_scoped(CorrectiveAction.objects, request, pk=pk)
     if request.method == "POST":

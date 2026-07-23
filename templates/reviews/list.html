@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Management Reviews — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Management Reviews</h1><p class="subtitle">Top management's periodic review of the management system.</p></div>
+  <a class="btn btn-primary" href="{% url 'reviews:create' %}">{% icon 'plus' 'nav-icon' %} Schedule review</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Meeting date</th><th>Framework</th><th>Inputs covered</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for review in reviews %}
+      <tr>
+        <td>{{ review.reference_code }}</td>
+        <td><a href="{% url 'reviews:detail' review.pk %}">{{ review.meeting_date|date:"d M Y" }}</a></td>
+        <td>{{ review.framework|default:"—" }}</td>
+        <td>{{ review.inputs_covered_count }}/{{ review.input_records.count }}</td>
+        <td>{% if review.status == 'completed' %}<span class="badge badge-green">Completed</span>{% else %}<span class="badge badge-outline">Draft</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-muted">No management reviews yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
