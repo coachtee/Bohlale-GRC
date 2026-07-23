@@ -1,6 +1,7 @@
+from django.conf import settings
 from django.core.cache import cache
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from accounts.models import User
@@ -132,6 +133,25 @@ class HealthCheckTests(TestCase):
         response = self.client.get(reverse("core:health"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+
+
+class ReverseProxyHttpsTests(TestCase):
+    """
+    DEPLOYMENT.md's documented topology terminates TLS at Nginx and proxies
+    to Gunicorn in plain HTTP over a Unix socket. Without SECURE_PROXY_SSL_HEADER,
+    request.is_secure() is always False behind that proxy, which would make
+    DJANGO_SECURE_SSL_REDIRECT=True redirect-loop forever once HTTPS is enabled
+    (see config/settings.py and SECURITY_AUDIT.md).
+    """
+
+    def test_x_forwarded_proto_header_is_trusted_for_is_secure(self):
+        self.assertEqual(settings.SECURE_PROXY_SSL_HEADER, ("HTTP_X_FORWARDED_PROTO", "https"))
+        request = RequestFactory().get("/", HTTP_X_FORWARDED_PROTO="https")
+        self.assertTrue(request.is_secure())
+
+    def test_without_the_header_request_is_not_treated_as_secure(self):
+        request = RequestFactory().get("/")
+        self.assertFalse(request.is_secure())
 
 
 class RateLimitTests(TestCase):
