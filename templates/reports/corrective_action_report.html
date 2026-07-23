@@ -1,0 +1,21 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Corrective Action Report — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Corrective Action Report{% endblock %}
+{% block report_subtitle %}{{ active_organisation.name }}{% endblock %}
+{% block report_actions %}<a class="btn btn-secondary" href="?format=xlsx">Export Excel</a>{% endblock %}
+{% block report_content %}
+<table class="data-table">
+  <thead><tr><th>Reference</th><th>Finding</th><th>Source</th><th>Owner</th><th>Due Date</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for a in actions %}
+    <tr>
+      <td>{{ a.reference_code }}</td><td>{{ a.finding_description|truncatewords:12 }}</td>
+      <td>{{ a.get_source_display }}</td><td>{{ a.owner|default:"—" }}</td>
+      <td>{{ a.due_date|default:"—" }}</td><td>{{ a.get_status_display }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-muted">No corrective actions recorded.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

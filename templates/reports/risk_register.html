@@ -1,0 +1,21 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Risk Register Report — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Risk Register{% endblock %}
+{% block report_subtitle %}{{ active_organisation.name }}{% endblock %}
+{% block report_actions %}<a class="btn btn-secondary" href="?format=xlsx">Export Excel</a>{% endblock %}
+{% block report_content %}
+<table class="data-table">
+  <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Inherent</th><th>Owner</th><th>Treatment</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for r in risks %}
+    <tr>
+      <td>{{ r.reference_code }}</td><td>{{ r.title }}</td><td>{{ r.get_category_display }}</td>
+      <td>{{ r.inherent_risk_score }}</td><td>{{ r.owner|default:"—" }}</td>
+      <td>{{ r.get_treatment_display }}</td><td>{{ r.get_status_display }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="text-muted">No risks recorded.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

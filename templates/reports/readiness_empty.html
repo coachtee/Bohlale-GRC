@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Audit Readiness — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Audit Readiness</h1></div></div>
+<div class="card empty-state">
+  {% icon 'shield-check' %}
+  <p class="font-semibold mb-1">No adopted framework yet.</p>
+  <a class="btn btn-primary" href="{% url 'frameworks:list' %}">Go to Frameworks</a>
+</div>
+{% endblock %}

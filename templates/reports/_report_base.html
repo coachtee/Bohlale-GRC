@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block content %}
+<div class="page-header no-print">
+  <div><h1>{% block report_title %}Report{% endblock %}</h1><p class="subtitle">{% block report_subtitle %}{% endblock %}</p></div>
+  <div class="flex gap-2">
+    {% block report_actions %}{% endblock %}
+    <button class="btn btn-secondary" onclick="window.print()">{% icon 'download' 'nav-icon' %} Print / Save as PDF</button>
+  </div>
+</div>
+<div class="mb-2" style="display:none;" id="print-header">
+  <h1>{% block print_title %}{{ active_organisation.name }}{% endblock %}</h1>
+</div>
+<div class="card">
+  {% block report_content %}{% endblock %}
+</div>
+<style>
+@media print {
+  #print-header { display: block !important; }
+}
+</style>
+{% endblock %}

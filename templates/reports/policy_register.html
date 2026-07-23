@@ -1,0 +1,21 @@
+{% extends "reports/_report_base.html" %}
+{% block title %}Policy Register — {{ active_organisation.name }}{% endblock %}
+{% block report_title %}Policy Register{% endblock %}
+{% block report_subtitle %}{{ active_organisation.name }}{% endblock %}
+{% block report_actions %}<a class="btn btn-secondary" href="?format=xlsx">Export Excel</a>{% endblock %}
+{% block report_content %}
+<table class="data-table">
+  <thead><tr><th>Reference</th><th>Title</th><th>Type</th><th>Version</th><th>Owner</th><th>Status</th><th>Next Review</th></tr></thead>
+  <tbody>
+  {% for d in documents %}
+    <tr>
+      <td>{{ d.reference_code }}</td><td>{{ d.title }}</td><td>{{ d.get_doc_type_display }}</td>
+      <td>{{ d.version_label }}</td><td>{{ d.owner|default:"—" }}</td><td>{{ d.get_status_display }}</td>
+      <td>{{ d.next_review_date|default:"—" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="text-muted">No documents yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
