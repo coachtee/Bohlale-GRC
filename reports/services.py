@@ -31,11 +31,19 @@ def _pct(numerator, denominator):
 
 
 def evidence_coverage(organisation, framework):
-    entries = SoAEntry.objects.filter(organisation=organisation, framework=framework, applicable=True)
-    total = entries.count()
+    entries = list(
+        SoAEntry.objects.filter(organisation=organisation, framework=framework, applicable=True)
+        .values_list("control_id", flat=True)
+    )
+    total = len(entries)
     if total == 0:
         return 0
-    with_evidence = sum(1 for e in entries if e.control.evidence_items.exists())
+    # One query for which of these controls have any evidence, instead
+    # of an `.exists()` query per SoA entry.
+    controls_with_evidence = set(
+        Control.objects.filter(pk__in=entries, evidence_items__isnull=False).values_list("pk", flat=True)
+    )
+    with_evidence = sum(1 for control_id in entries if control_id in controls_with_evidence)
     return _pct(with_evidence, total)
 
 

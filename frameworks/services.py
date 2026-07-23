@@ -7,18 +7,23 @@ def adopt_framework(organisation, framework):
 
 
 def framework_progress(organisation, framework):
-    requirements = Requirement.objects.filter(framework=framework)
-    total = requirements.count()
+    # 2 queries total (was 3: a .count(), a status fetch, then a second
+    # full re-evaluation of `requirements` in the for-loop) — called once
+    # per adopted framework on every dashboard load and in reports, so
+    # this adds up under multiple adoptions.
+    requirement_ids = list(Requirement.objects.filter(framework=framework).values_list("id", flat=True))
+    total = len(requirement_ids)
     if total == 0:
         return 0
-    statuses = {
-        rs.requirement_id: rs.status
-        for rs in RequirementStatus.objects.filter(organisation=organisation, requirement__framework=framework)
-    }
+    statuses = dict(
+        RequirementStatus.objects.filter(
+            organisation=organisation, requirement_id__in=requirement_ids
+        ).values_list("requirement_id", "status")
+    )
     applicable_total = 0
     done = 0
-    for req in requirements:
-        status = statuses.get(req.id)
+    for req_id in requirement_ids:
+        status = statuses.get(req_id)
         if status == REQ_NOT_APPLICABLE:
             continue
         applicable_total += 1

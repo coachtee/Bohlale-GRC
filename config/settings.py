@@ -251,19 +251,35 @@ AI_API_KEY = os.environ.get("AI_API_KEY", "")
 AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
 
 
-# --- Logging -----------------------------------------------------------
+# --- Logging -------------------------------------------------------------
+# Deliberately console-only (stdout/stderr), not a file handler with its
+# own rotation: the documented production setup (DEPLOYMENT.md) runs
+# under systemd, which already captures stdout/stderr into the journal
+# with its own rotation/retention (`journalctl -u bohlale-grc`) — adding
+# a second, independently-rotated log file would just be a second
+# thing to keep in sync with no real benefit for a single-VPS deployment.
+# Never logs request bodies, passwords, or the AI_API_KEY — see
+# SECURITY_AUDIT.md for what was checked here.
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "structured": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
-        "console": {"class": "logging.StreamHandler"},
+        "console": {"class": "logging.StreamHandler", "formatter": "structured"},
     },
     "root": {
         "handlers": ["console"],
         "level": "WARNING",
     },
     "loggers": {
+        # django.request/django.security (4xx/5xx, PermissionDenied,
+        # SuspiciousOperation) inherit this and propagate up to it.
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "bohlale": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },

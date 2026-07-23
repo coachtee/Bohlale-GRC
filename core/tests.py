@@ -56,6 +56,63 @@ class DashboardSmokeTests(TestCase):
         self.assertRedirects(response, reverse("tenancy:organisation_list"))
 
 
+class DashboardPerformanceTests(TestCase):
+    """
+    Locks in the N+1 fixes made during the production-readiness review
+    (core/dashboard.py, frameworks/services.py::framework_progress,
+    risks/models.py::Risk.get_matrix). Asserts the dashboard's query
+    count does not grow with the number of adopted frameworks / pending
+    approvals / risks — if it does, that's an N+1 regression even if
+    every individual test still passes.
+    """
+
+    def setUp(self):
+        call_command("seed_frameworks")
+        self.org = Organisation.objects.create(name="NIBS")
+        self.user = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=self.user, role="org_admin")
+        self.client.login(email="a@example.com", password="StrongPass123!")
+
+    def _query_count_for_dashboard(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse("core:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        return len(ctx.captured_queries)
+
+    def test_query_count_does_not_grow_with_adopted_frameworks_or_risks(self):
+        cache.clear()
+        for framework in Framework.objects.all():
+            adopt_framework(self.org, framework)
+        for i in range(3):
+            Risk.objects.create(organisation=self.org, title=f"Risk {i}", likelihood=3, impact=3)
+        self._query_count_for_dashboard()  # warm-up: primes the risk-matrix cache
+        small_count = self._query_count_for_dashboard()
+
+        for i in range(3, 15):
+            Risk.objects.create(organisation=self.org, title=f"Risk {i}", likelihood=3, impact=3)
+        for i in range(5):
+            doc = Document.objects.create(organisation=self.org, title=f"Policy {i}")
+            from approvals.models import ApprovalRequest
+
+            ApprovalRequest.objects.create(organisation=self.org, target=doc)
+        large_count = self._query_count_for_dashboard()
+
+        # Not strict equality: introducing pending approvals for the
+        # first time costs one bounded, one-time ContentType lookup
+        # (see _resolve_targets) — allow a small constant tolerance, but
+        # 12 more risks and 5 more approvals must not multiply the query
+        # count the way a true N+1 would (that would show up as +15/+20,
+        # not +1/+2).
+        self.assertLessEqual(
+            large_count, small_count + 2,
+            f"Dashboard query count grew from {small_count} to {large_count} as data volume "
+            "grew — this indicates an N+1 query regression.",
+        )
+
+
 class DashboardTenantIsolationTests(TestCase):
     def setUp(self):
         self.org_a = Organisation.objects.create(name="Org A")
@@ -68,6 +125,13 @@ class DashboardTenantIsolationTests(TestCase):
     def test_dashboard_never_shows_other_org_data(self):
         response = self.client.get(reverse("core:dashboard"))
         self.assertNotContains(response, "Org B secret risk")
+
+
+class HealthCheckTests(TestCase):
+    def test_health_check_confirms_db_connectivity_without_login(self):
+        response = self.client.get(reverse("core:health"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
 
 
 class RateLimitTests(TestCase):

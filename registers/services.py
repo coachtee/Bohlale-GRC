@@ -55,6 +55,17 @@ DEFAULT_REGISTER_TYPES = [
 
 
 def ensure_default_register_types():
+    # Cheap short-circuit: this runs on every registers-hub page view,
+    # but the default register types essentially never change after
+    # first creation. A single COUNT beats up to len(DEFAULT_REGISTER_TYPES)
+    # update_or_create round-trips (each a SELECT + possible UPDATE/INSERT)
+    # on every single load.
+    expected_slugs = {spec["slug"] for spec in DEFAULT_REGISTER_TYPES}
+    existing_slugs = set(
+        RegisterType.objects.filter(slug__in=expected_slugs).values_list("slug", flat=True)
+    )
+    if existing_slugs == expected_slugs:
+        return
     for spec in DEFAULT_REGISTER_TYPES:
         RegisterType.objects.update_or_create(
             slug=spec["slug"],

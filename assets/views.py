@@ -11,6 +11,9 @@ class AssetListView(TenantListView):
     template_name = "assets/list.html"
     context_object_name = "assets"
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("owner")
+
 
 class AssetDetailView(TenantDetailView):
     model = Asset

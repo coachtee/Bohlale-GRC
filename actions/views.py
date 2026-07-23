@@ -18,6 +18,9 @@ class CorrectiveActionListView(TenantListView):
     template_name = "actions/list.html"
     context_object_name = "actions"
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("owner")
+
 
 class CorrectiveActionDetailView(TenantDetailView):
     model = CorrectiveAction

@@ -22,7 +22,7 @@
           {% elif audit.status == 'in_progress' %}<span class="badge badge-blue">In Progress</span>
           {% else %}<span class="badge badge-outline">Planned</span>{% endif %}
         </td>
-        <td>{{ audit.findings.count }}</td>
+        <td>{{ audit.findings_count }}</td>
       </tr>
     {% empty %}
       <tr><td colspan="6" class="text-muted">No audits planned yet.</td></tr>

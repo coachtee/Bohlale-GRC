@@ -19,6 +19,9 @@ class EvidenceListView(TenantListView):
     template_name = "evidence/list.html"
     context_object_name = "evidence_items"
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("owner")
+
 
 class EvidenceDetailView(TenantDetailView):
     model = Evidence

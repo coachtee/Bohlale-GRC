@@ -12,7 +12,9 @@ from .services import create_review
 
 @require_organisation
 def review_list(request):
-    reviews = ManagementReview.objects.filter(organisation=request.organisation)
+    reviews = ManagementReview.objects.filter(organisation=request.organisation).select_related(
+        "framework"
+    ).prefetch_related("input_records")
     return render(request, "reviews/list.html", {"reviews": reviews})
 
 

@@ -17,6 +17,11 @@ class AuditListView(TenantListView):
     template_name = "audits/list.html"
     context_object_name = "audits"
 
+    def get_queryset(self):
+        from django.db.models import Count
+
+        return super().get_queryset().select_related("lead_auditor").annotate(findings_count=Count("findings"))
+
 
 class AuditDetailView(TenantDetailView):
     model = Audit
