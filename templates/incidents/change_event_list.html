@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Change Events — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Organisational Change Events</h1><p class="subtitle">New employees, suppliers, systems and other changes that may affect compliance.</p></div>
+  <a class="btn btn-primary" href="{% url 'incidents:change_event_create' %}">{% icon 'plus' 'nav-icon' %} Report a change</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Type</th><th>Description</th><th>Reported by</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for event in events %}
+      <tr>
+        <td><a href="{% url 'incidents:change_event_detail' event.pk %}">{{ event.get_event_type_display }}</a></td>
+        <td class="text-sm">{{ event.description|truncatewords:12 }}</td>
+        <td>{{ event.reported_by|default:"—" }}</td>
+        <td><span class="badge badge-outline">{{ event.get_status_display }}</span></td>
+        <td>{{ event.created_at|date:"d M Y" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-muted">No change events recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

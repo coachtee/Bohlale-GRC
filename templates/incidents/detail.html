@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load icons nav %}
+{% block title %}{{ incident.title }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ incident.title }}</h1><p class="subtitle">{{ incident.reference_code }}</p></div>
+  <a class="btn btn-secondary" href="{% url 'incidents:edit' incident.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+</div>
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>What happened</h3>
+    <p class="text-sm text-secondary">{{ incident.description }}</p>
+    <div class="divider"></div>
+    <div class="grid grid-2">
+      <div><p class="text-xs text-muted mb-1">SYSTEMS AFFECTED</p><p class="text-sm">{{ incident.systems_affected|default:"—" }}</p></div>
+      <div><p class="text-xs text-muted mb-1">INFORMATION AFFECTED</p><p class="text-sm">{{ incident.information_affected|default:"—" }}</p></div>
+    </div>
+    <div class="divider"></div>
+    <p class="text-xs text-muted mb-1">IMMEDIATE ACTIONS TAKEN</p>
+    <p class="text-sm">{{ incident.immediate_actions|default:"Not documented yet." }}</p>
+  </div>
+  <div>
+    <div class="card mb-3">
+      <h3>Details</h3>
+      <div class="text-sm"><strong>Severity:</strong> {{ incident.get_severity_display }}</div>
+      <div class="text-sm"><strong>Status:</strong> {{ incident.get_status_display }}</div>
+      <div class="text-sm"><strong>Personal info involved:</strong> {{ incident.personal_info_involved|yesno:"Yes,No" }}</div>
+      <div class="text-sm"><strong>Discovered by:</strong> {{ incident.discovered_by|default:"—" }}</div>
+    </div>
+    <div class="card">
+      <h3>Follow-up</h3>
+      <a class="btn btn-secondary btn-sm w-full mb-2" href="{% safe_url 'actions:create_from_incident' incident.pk %}">Create corrective action</a>
+      <a class="btn btn-secondary btn-sm w-full" href="{% url 'risks:create' %}">Review risk register</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
