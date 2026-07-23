@@ -1,24 +1,24 @@
 # Bohlale GRC — Build Status
 
-**Last updated:** 2026-07-23 (session 2 — production readiness, security hardening & UAT pass, Task 45 of 49)
+**Last updated:** 2026-07-23 (session 2 — production readiness, security hardening & UAT pass, COMPLETE — Task 49 of 49)
 **Branch:** `claude/production-readiness-v1` (branched from `main` after session 1's feature-complete build merged)
 
-> Read this file fully before resuming work. Then read `BOHLALE_GRC_MASTER_SPEC.md` and `PRODUCTION_READINESS_PROGRESS` below. Session 1 (branch `claude/bohlale-grc-build-nki122`, now merged to `main`) built every module feature-complete — see "Completed modules" further down, unchanged since then. Session 2 (this branch) is a from-main security-hardening, UAT and production-readiness pass, NOT a rebuild — do not re-architect anything described as complete below. If resuming mid-session-2, jump straight to "Production readiness pass — status and next task" immediately below; it is the authoritative, current status.
+> Read this file fully before resuming work. Then read `BOHLALE_GRC_MASTER_SPEC.md`. Session 1 (branch `claude/bohlale-grc-build-nki122`, now merged to `main`) built every module feature-complete — see "Completed modules" further down, unchanged since then. Session 2 (this branch, now complete) took the feature-complete build through a full production-readiness, security-hardening, and UAT pass — see "Production readiness pass — status" immediately below, plus `SECURITY_AUDIT.md` and `PRODUCTION_READINESS.md` (the authoritative current findings/verdict). If a future session resumes this branch, there is no in-progress task to pick up — read `PRODUCTION_READINESS.md`'s BLOCKED section for what remains, all of which is external/operational, not further coding.
 
 ## How to resume this build (for the next Claude session)
 
 1. `source .venv/bin/activate` (create venv + `pip install -r requirements.txt` if missing).
-2. `python manage.py check` and `python manage.py test` — confirm current state is green before adding more (224 tests expected to pass as of this update).
-3. Read "Production readiness pass — status and next task" below, then pick up at the "Next task" line.
+2. `python manage.py check` and `python manage.py test` — confirm current state is green before adding more (226 tests expected to pass as of this update, verified on both SQLite and PostgreSQL).
+3. Read `PRODUCTION_READINESS.md` for the current release-readiness verdict and `SECURITY_AUDIT.md` for the full findings register before assuming there is more security work to do.
 4. If adding new work, follow the established pattern: model → migration → service layer (if needed) → RBAC-checked views (reuse `core.base_views` generic CRUD bases where the workflow is a plain register) → templates → tests (model, tenant isolation, RBAC, at least one full-flow integration test) → update this file → commit → push.
 
 ---
 
-## Production readiness pass — status and next task
+## Production readiness pass — status
 
-This is a continuation session working through a 26-section production-readiness/security-hardening/UAT instruction set on top of the already feature-complete app from session 1. Work proceeds task-by-task (tracked via the TaskCreate/TaskUpdate task list, tasks #27-49); #27-45 are complete, #46-49 remain.
+This session worked through a 26-section production-readiness/security-hardening/UAT instruction set on top of the already feature-complete app from session 1. All work (tasks #27-49) is complete.
 
-**Next task: #46 — Update `DEPLOYMENT.md` and `.env.example` for production readiness.** Then #47 (`SECURITY_AUDIT.md`), #48 (`PRODUCTION_READINESS.md` gate doc), #49 (final test run, doc updates, final report).
+**Final deliverables:** `SECURITY_AUDIT.md` (every finding, classified and remediated), `PRODUCTION_READINESS.md` (the release gate — verdict: **PRODUCTION RELEASE RECOMMENDED**, contingent on external/operational actions listed in its BLOCKED section), `POPIA_READINESS.md`, `BACKUP_RESTORE.md` (tested), `UAT_PLAN.md`/`UAT_RESULTS.md`, plus an updated `DEPLOYMENT.md`, `.env.example`, `README.md`, and `CHANGELOG.md`. 226 tests passing (up from 172 at the start of this pass), verified against both SQLite and a real PostgreSQL 16 instance. `manage.py check` and `manage.py check --deploy` (with production-equivalent env vars) both clean.
 
 ### What's been done (tasks #27-45)
 
@@ -39,9 +39,14 @@ This is a continuation session working through a 26-section production-readiness
 - **Bohlale design identity (light refinement)**: new `bohlale_mark` icon (infinity/Tetris-adjacent motif), `.completion-panel`/`.bohlale-loader` components used in journey-completion and dashboard empty states, dropdown/loading-state polish. Visual verification of a genuinely 100%-completed journey **found and fixed two real bugs**: `journeys/views.py::journey_home` kept showing step 1 as "current" after completion (bad fallback logic), and `core/dashboard.py::_primary_journey()` made a fully-completed journey vanish from the dashboard entirely (only queried `status="in_progress"`). Both fixed with regression tests.
 - **Accessibility pass** (task #45, just completed): fixed WCAG AA contrast failures (`--text-muted` and badge/flash-message green/amber text-on-tinted-bg, in both light and dark themes), added `scope="col"` to every data table header (30 templates), wired `aria-describedby` help-text association in form templates (Django auto-emits the attribute but the target `id` was missing from the DOM), hardened focus-visible states (a bare `input:focus{outline:none}` was stripping keyboard focus from checkboxes), added ARIA/Escape-key handling to dropdown menus, fixed non-semantic `<div class="content">` → `<main>`. Also found and fixed a genuinely embarrassing bug while checking icon-button labels: the topbar Help link pointed at `code.claude.com` (Claude Code's own docs) instead of Bohlale support — now `mailto:support@bohlalegrc.example`.
 
+- **Deployment docs finalized** (task #46): `DEPLOYMENT.md` gained a documented (and code-fixed) reverse-proxy HTTPS trust requirement, a rollback procedure (previously missing entirely), `/health/`-based monitoring guidance, and a "before go-live" reading list; `.env.example` gained two previously-undocumented session-cookie env vars. This work **found and fixed a real bug**: `SECURE_PROXY_SSL_HEADER` was missing from `config/settings.py`, meaning the documented Nginx+Gunicorn+HTTPS deployment steps would have caused an infinite redirect loop in production — fixed, with a regression test (`core/tests.py::ReverseProxyHttpsTests`).
+- **`SECURITY_AUDIT.md` written** (task #47): every security finding from this entire pass, classified CRITICAL(1)/HIGH(3)/MEDIUM(4)/LOW(2)/INFORMATIONAL(5), each with description, affected component, risk, reproduction, remediation, and regression-test status. No unresolved Critical/High finding remains.
+- **`PRODUCTION_READINESS.md` written** (task #48): the release gate, PASS/PASS WITH CAVEAT/FAIL/BLOCKED per category (tests, tenant isolation, RBAC, auth, Django deploy checks, file security, document governance, audit logs, AI security, database, backups, logging/monitoring, performance, responsive design, accessibility, deployment, POPIA). Verdict: **PRODUCTION RELEASE RECOMMENDED**, contingent on an explicit BLOCKED-external-action list (real secrets, domain/TLS, production Postgres, SMTP, a repeated backup-restore drill on the actual target server, POPIA organisational/legal decisions) that no codebase change can resolve.
+- **Final verification** (task #49): full suite re-run against a real PostgreSQL 16 instance one final time (226/226 passing, closing the one caveat noted in `PRODUCTION_READINESS.md` §1), `README.md` and `CHANGELOG.md` updated to point at the new production-readiness docs.
+
 ### Documents created this pass (in addition to session 1's docs)
 
-`POPIA_READINESS.md`, `BACKUP_RESTORE.md`, `UAT_PLAN.md`, `UAT_RESULTS.md`. Still to be created: `SECURITY_AUDIT.md` (#47), `PRODUCTION_READINESS.md` (#48).
+`POPIA_READINESS.md`, `BACKUP_RESTORE.md`, `UAT_PLAN.md`, `UAT_RESULTS.md`, `SECURITY_AUDIT.md`, `PRODUCTION_READINESS.md`.
 
 ---
 
@@ -120,4 +125,4 @@ Per rule 27/28 of the original build instructions, a full requirement-by-require
 
 The application is feature-complete against the Master Specification's engineering scope. What remains outside this codebase is market research (§49) and pricing decisions (§48), both explicitly deferred by the spec to a later, human-led phase.
 
-**This "Remaining limitations" section describes session 1's state and is kept for history.** For the current, authoritative status (session 2, production readiness pass), see "Production readiness pass — status and next task" near the top of this file.
+**This "Remaining limitations" section describes session 1's state and is kept for history.** For the current, authoritative status (session 2, production readiness pass, now complete), see "Production readiness pass — status" near the top of this file, and `PRODUCTION_READINESS.md` / `SECURITY_AUDIT.md` for the full detail.

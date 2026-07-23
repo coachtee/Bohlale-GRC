@@ -63,3 +63,75 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 - Missing Recent Activity entries for demo-seeded data (`log_activity()` now accepts an explicit `actor` for non-request contexts, used throughout `seed_nibs_demo`).
 
 172 tests passing (`python manage.py test`). See `BUILD_STATUS.md` for full build state, documented assumptions, and the final-audit findings.
+
+## Production readiness, security hardening & UAT pass
+
+A dedicated pass (branch `claude/production-readiness-v1`) taking the
+feature-complete build above through security hardening, tenant-isolation
+and RBAC verification, UAT, accessibility, and deployment-readiness work.
+Full detail in `SECURITY_AUDIT.md` and `PRODUCTION_READINESS.md`.
+
+### Security
+- **Critical**: uploaded evidence/document/management-review attachments
+  were served from an unauthenticated `/media/` URL with no tenant check
+  — replaced with tenant-and-RBAC-checked download views
+  (`core/protected_media.py`); raw media serving removed entirely.
+- **High**: fixed 5 cross-tenant IDOR gaps in form field querysets
+  (risk/control/evidence/audit-finding/document forms accepting another
+  organisation's requirement/framework primary keys).
+- **High**: closed 4 RBAC gaps where journey-start and sign-off actions
+  (audit close, corrective-action verify/close, management-review
+  complete) were reachable at a lower privilege level than intended, plus
+  a form-edit bypass around the corrective-action approval gate.
+- **High**: added the missing `SECURE_PROXY_SSL_HEADER` setting — the
+  documented Nginx/Gunicorn deployment would otherwise HTTPS-redirect-loop
+  once TLS was enabled.
+- **Medium**: fixed a reference-code assignment race condition
+  (`transaction.atomic()` + `select_for_update()`), an incident-reporting
+  notification gap that could reach nobody in realistic small-org
+  staffing, an unreachable document Archived state with no server-side
+  edit guard, and added organisation member role-change/removal
+  (previously invite-only, no way to revoke access).
+- New `core/middleware.py::SecurityHeadersMiddleware` (Content-Security-
+  Policy, Permissions-Policy); every inline `onclick`/`onchange`/
+  `onsubmit` handler replaced with CSP-safe `data-*` attributes.
+  `SECRET_KEY` insecure-default now refuses to boot with `DEBUG=False`.
+
+### Added
+- POPIA self-service capabilities: `accounts:export_my_data`,
+  `accounts:deactivate_account`; `POPIA_READINESS.md`.
+- `BACKUP_RESTORE.md` — a PostgreSQL backup/restore procedure that was
+  actually executed against a real PostgreSQL 16 instance and verified
+  (row counts and content matched exactly after restore).
+- `/health/` upgraded from a static response to a real `SELECT 1`
+  database-connectivity check.
+- `core/tests_uat.py` — a 22-step, 3-persona, real-HTTP end-to-end UAT
+  walkthrough of the full NIBS reference scenario, asserting persisted
+  business outcomes, not just HTTP status codes. `UAT_PLAN.md` /
+  `UAT_RESULTS.md`.
+- A small Bohlale visual identity (infinity-mark icon, completion panels,
+  a loading indicator) introduced at onboarding/journey-completion
+  moments only — the dashboard stays professional and monochrome.
+- Accessibility fixes: WCAG AA contrast corrections, `scope="col"` on
+  every data table, `aria-describedby` form help-text association,
+  visible focus states on all interactive elements including checkboxes,
+  ARIA/Escape-key handling on dropdown menus.
+- `DEPLOYMENT.md`: rollback procedure, reverse-proxy trust notes,
+  `/health/` monitoring guidance, a "before go-live" reading list.
+- `SECURITY_AUDIT.md`, `PRODUCTION_READINESS.md`.
+
+### Fixed
+- N+1 queries in the risk matrix, dashboard (GenericForeignKey
+  resolution), framework progress calculation, and 5 list views.
+- A completed guided-implementation journey kept displaying step 1 as
+  "current" instead of a completion state, and vanished from the
+  dashboard entirely once its status became "completed" rather than
+  "in progress."
+- The topbar Help link pointed at an unrelated third-party documentation
+  site instead of Bohlale support.
+
+226 tests passing (up from 172 at the start of this pass), verified
+against both SQLite and a real PostgreSQL 16 instance. `manage.py check`
+and `manage.py check --deploy` (with production-equivalent environment
+variables) both clean. See `PRODUCTION_READINESS.md` for the full release
+gate assessment.

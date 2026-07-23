@@ -33,14 +33,11 @@ re-run against Postgres after the final accessibility/deployment-doc
 commits, since none of those commits touch database behaviour — see
 caveat below).
 
-**Caveat:** the final 3 commits of this pass (accessibility CSS/template
-changes, DEPLOYMENT.md/.env.example updates, SECURITY_AUDIT.md +
-proxy-header tests) were run against SQLite only, not re-verified against
-PostgreSQL. None of them touch models, migrations, or querysets, so this
-is a low-risk gap, but it means "tested against Postgres" is accurate as
-of the N+1/backup-restore commit (`2fe45ab`), not as of `HEAD`. Re-running
-the full suite with `DB_ENGINE=postgres` before go-live is cheap
-(~2 minutes) and recommended.
+The full suite was re-run against a real PostgreSQL 16 instance as the
+final step of this pass (all 226 tests, `OK`), closing the gap noted
+during earlier drafting of this document (the accessibility/deployment-
+doc/security-audit commits had initially only been verified against
+SQLite) — no caveat remains here.
 
 ## 2. Tenant isolation
 
@@ -376,9 +373,6 @@ unilaterally.
 7. **Formal WCAG conformance certification** (§15 caveat), if required by
    a specific client contract, needs a dedicated accessibility audit
    beyond this pass's code-level review.
-8. **Re-running the full test suite against PostgreSQL** one more time
-   after the final 3 commits of this pass (§1 caveat) — low risk, cheap,
-   but not yet done as of this document.
 
 ---
 
