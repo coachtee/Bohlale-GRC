@@ -9,6 +9,13 @@ def dashboard(request):
     from core.dashboard import build_dashboard_context
 
     context = build_dashboard_context(request)
+    hour = context.get("hour", 12)
+    if hour < 12:
+        context["daypart"] = "morning"
+    elif hour < 18:
+        context["daypart"] = "afternoon"
+    else:
+        context["daypart"] = "evening"
     return render(request, "core/dashboard.html", context)
 
 
