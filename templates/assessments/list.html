@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Assessments — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Assessments</h1><p class="subtitle">Gap, baseline, maturity and readiness assessments against your frameworks.</p></div>
+  <a class="btn btn-primary" href="{% url 'assessments:create' %}">{% icon 'plus' 'nav-icon' %} Start assessment</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Framework</th><th>Assessor</th><th>Status</th><th>Progress</th></tr></thead>
+    <tbody>
+    {% for a in assessments %}
+      <tr>
+        <td>{{ a.reference_code }}</td>
+        <td><a href="{% url 'assessments:detail' a.pk %}">{{ a.name }}</a></td>
+        <td>{{ a.get_assessment_type_display }}</td>
+        <td>{{ a.framework|default:"—" }}</td>
+        <td>{{ a.assessor|default:"—" }}</td>
+        <td><span class="badge badge-outline">{{ a.get_status_display }}</span></td>
+        <td>{{ a.completion_percent }}%</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No assessments yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
