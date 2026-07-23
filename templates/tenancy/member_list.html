@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Members — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Organisation Settings</h1>
+    <p class="subtitle">Members and roles for {{ active_organisation.name }}.</p>
+  </div>
+  {% if can_manage %}
+    <a class="btn btn-primary" href="{% url 'tenancy:invite_member' %}">Invite member</a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+      <tbody>
+      {% for m in members %}
+        <tr>
+          <td>{{ m.user.get_full_name|default:"—" }}</td>
+          <td>{{ m.user.email }}</td>
+          <td><span class="badge badge-outline">{{ m.get_role_display }}</span></td>
+          <td>{{ m.date_joined|date:"d M Y" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-muted">No members yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if invites %}
+<h2 style="margin-top:24px;">Pending invitations</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Email</th><th>Role</th><th>Invited</th><th></th></tr></thead>
+      <tbody>
+      {% for invite in invites %}
+        <tr>
+          <td>{{ invite.email }}</td>
+          <td>{{ invite.get_role_display }}</td>
+          <td>{{ invite.created_at|date:"d M Y" }}</td>
+          <td>
+            {% if can_manage %}
+            <form method="post" action="{% url 'tenancy:revoke_invite' invite.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-secondary" type="submit">Revoke</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

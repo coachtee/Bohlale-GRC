@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}My Organisations — Bohlale GRC{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>My Organisations</h1>
+    <p class="subtitle">Organisations you belong to or consult for. Switch between them without mixing data.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'tenancy:organisation_create' %}">{% icon 'plus' 'nav-icon' %} New organisation</a>
+</div>
+
+{% if rows %}
+<div class="grid grid-3">
+  {% for row in rows %}
+  <a class="card" href="{% url 'tenancy:organisation_switch' row.org.pk %}?next={% url 'core:dashboard' %}" style="display:block;">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="avatar" style="background:var(--color-grey-800);">{{ row.org.initials }}</span>
+      <div>
+        <div class="font-semibold">{{ row.org.name }}</div>
+        <div class="text-xs text-muted">{{ row.org.get_organisation_type_display }}</div>
+      </div>
+    </div>
+    {% if row.membership %}
+      <span class="badge badge-outline">{{ row.membership.get_role_display }}</span>
+    {% endif %}
+    {% if row.org.is_demo %}<span class="badge badge-blue">Demo</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+  {% icon 'org' %}
+  <p class="font-semibold mb-1">You don't have any organisations yet.</p>
+  <p class="text-sm mb-3">Create your first organisation to start a guided implementation journey.</p>
+  <a class="btn btn-primary" href="{% url 'tenancy:organisation_create' %}">Create organisation</a>
+</div>
+{% endif %}
+{% endblock %}

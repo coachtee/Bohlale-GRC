@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Notifications — Bohlale GRC{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Notifications</h1><p class="subtitle">Overdue actions, reviews, approvals and assigned questions.</p></div>
+  <a class="btn btn-secondary" href="{% url 'notifications:mark_all_read' %}">Mark all as read</a>
+</div>
+<div class="card">
+  {% for note in notifications %}
+    <div class="list-row">
+      <div class="list-row-main">
+        <span class="status-dot {% if not note.is_read %}amber{% else %}grey{% endif %}" style="margin-top:6px;"></span>
+        <div>
+          <div class="list-row-title"><a href="{% url 'notifications:mark_read' note.pk %}">{{ note.message }}</a></div>
+          <div class="list-row-meta">{{ note.get_category_display }}</div>
+        </div>
+      </div>
+      <div class="list-row-meta">{{ note.created_at|timesince }} ago</div>
+    </div>
+  {% empty %}
+    <div class="empty-state">You're all caught up.</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Invite member — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Invite a member</h1><p class="subtitle">They'll receive an invitation to join {{ active_organisation.name }}.</p></div></div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Send invitation</button>
+      <a class="btn btn-secondary" href="{% url 'tenancy:member_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Dashboard — {{ organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Good {{ daypart|default:"day" }}, {{ user.first_name|default:user.email }} 👋</h1>
+    <p class="subtitle">Here's what's happening with {{ organisation.name }} today.</p>
+  </div>
+  <div class="relative">
+    <button class="btn btn-secondary" data-dropdown-toggle="org-switch-panel" type="button">
+      {% icon 'building' 'nav-icon' %} {{ organisation.name }} {% icon 'chevron-down' 'nav-icon' %}
+    </button>
+    <div class="dropdown-panel" id="org-switch-panel">
+      <div class="dropdown-header">Switch organisation</div>
+      {% for org in accessible_organisations %}
+        <a class="dropdown-item" href="{% url 'tenancy:organisation_switch' org.pk %}">{{ org.name }}</a>
+      {% endfor %}
+      <a class="dropdown-item text-sm font-semibold" href="{% url 'tenancy:organisation_create' %}">+ New organisation</a>
+    </div>
+  </div>
+</div>
+
+<p class="text-muted text-sm">The full dashboard (implementation progress, compliance overview, open actions, risk overview, journey widget, tasks due soon, upcoming reviews, recent activity, quick actions) is assembled once the dependent modules are built — see BUILD_STATUS.md.</p>
+{% endblock %}
