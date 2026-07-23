@@ -11,7 +11,7 @@
 
 <h3>Framework progress</h3>
 <table class="data-table">
-  <thead><tr><th>Framework</th><th>Progress</th></tr></thead>
+  <thead><tr><th scope="col">Framework</th><th scope="col">Progress</th></tr></thead>
   <tbody>
   {% for row in summary.frameworks %}
     <tr><td>{{ row.framework.name }}</td><td>{{ row.progress }}%</td></tr>
@@ -23,7 +23,7 @@
 
 <h3 style="margin-top:20px;">Risk overview</h3>
 <table class="data-table">
-  <thead><tr><th>Very Low</th><th>Low</th><th>Medium</th><th>High</th><th>Total</th></tr></thead>
+  <thead><tr><th scope="col">Very Low</th><th scope="col">Low</th><th scope="col">Medium</th><th scope="col">High</th><th scope="col">Total</th></tr></thead>
   <tbody>
     <tr>
       <td>{{ summary.risk_overview.counts.very_low }}</td>

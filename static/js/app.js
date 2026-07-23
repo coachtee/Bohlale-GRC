@@ -18,23 +18,54 @@
     backdrop.classList.remove("open");
   });
 
-  // Generic dropdown toggles (notifications, user menu)
+  // Generic dropdown toggles (notifications, user menu). Keeps
+  // aria-expanded in sync with visible state and supports Escape to
+  // close + return focus to the trigger, for keyboard/screen-reader users.
+  var dropdownTriggers = {};
   qsa("[data-dropdown-toggle]").forEach(function (btn) {
     var panelId = btn.getAttribute("data-dropdown-toggle");
     var panel = document.getElementById(panelId);
     if (!panel) return;
+    btn.setAttribute("aria-haspopup", "true");
+    btn.setAttribute("aria-expanded", "false");
+    dropdownTriggers[panelId] = btn;
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
       qsa(".dropdown-panel.open").forEach(function (p) {
-        if (p !== panel) p.classList.remove("open");
+        if (p !== panel) {
+          p.classList.remove("open");
+          var otherTrigger = dropdownTriggers[p.id];
+          otherTrigger && otherTrigger.setAttribute("aria-expanded", "false");
+        }
       });
-      panel.classList.toggle("open");
+      var nowOpen = panel.classList.toggle("open");
+      btn.setAttribute("aria-expanded", nowOpen ? "true" : "false");
     });
   });
+  function closeAllDropdowns() {
+    qsa(".dropdown-panel.open").forEach(function (p) {
+      p.classList.remove("open");
+      var trigger = dropdownTriggers[p.id];
+      trigger && trigger.setAttribute("aria-expanded", "false");
+    });
+  }
   document.addEventListener("click", function (e) {
     qsa(".dropdown-panel.open").forEach(function (p) {
-      if (!p.contains(e.target)) p.classList.remove("open");
+      if (!p.contains(e.target)) {
+        p.classList.remove("open");
+        var trigger = dropdownTriggers[p.id];
+        trigger && trigger.setAttribute("aria-expanded", "false");
+      }
     });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      var openPanel = qs(".dropdown-panel.open");
+      if (!openPanel) return;
+      var trigger = dropdownTriggers[openPanel.id];
+      closeAllDropdowns();
+      trigger && trigger.focus();
+    }
   });
 
   // Auto-submit a form when a marked field changes (CSP-friendly

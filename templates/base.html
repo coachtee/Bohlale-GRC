@@ -14,16 +14,16 @@
   {% include "core/_sidebar.html" %}
   <div class="main-col">
     {% include "core/_topbar.html" %}
-    <div class="content{% block content_width_class %}{% endblock %}">
+    <main class="content{% block content_width_class %}{% endblock %}">
       {% if messages %}
-        <div class="messages">
+        <div class="messages" role="status">
           {% for message in messages %}
             <div class="message {{ message.tags }}">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}
       {% block content %}{% endblock %}
-    </div>
+    </main>
   </div>
 </div>
 {% else %}
