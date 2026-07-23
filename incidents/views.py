@@ -6,6 +6,7 @@ from activity.utils import log_activity
 from core.base_views import TenantCreateView, TenantDeleteView, TenantDetailView, TenantListView, TenantUpdateView
 from core.permissions import get_object_or_404_scoped, require_editor, require_organisation
 from notifications.utils import notify
+from tenancy.constants import APPROVER_ROLES
 from tenancy.models import Membership
 
 from .forms import ChangeEventForm, IncidentForm
@@ -34,8 +35,14 @@ class IncidentCreateView(TenantCreateView):
         form.instance.discovered_by = self.request.user
         response = super().form_valid(form)
         link = reverse("incidents:detail", args=[self.object.pk])
+        # APPROVER_ROLES (consultant, org_admin, executive) rather than
+        # just admin roles: an incident with only a self-reporting
+        # consultant and no separate org_admin must still reach someone
+        # who can act on it — an Executive is a legitimate incident
+        # decision-maker, and without this fallback such an org would
+        # silently notify nobody at all.
         admins = Membership.objects.filter(
-            organisation=self.request.organisation, is_active=True, role__in=["org_admin", "consultant"]
+            organisation=self.request.organisation, is_active=True, role__in=APPROVER_ROLES
         ).exclude(user=self.request.user).select_related("user")
         for membership in admins:
             notify(

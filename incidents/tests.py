@@ -56,6 +56,20 @@ class IncidentReportFlowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Notification.objects.filter(recipient=admin, category="incident").exists())
 
+    def test_reporting_incident_also_notifies_executives(self):
+        # Regression: incidents previously only notified org_admin/
+        # consultant roles. An org whose only admin-role person is the
+        # one reporting the incident would then notify nobody at all —
+        # Executives are legitimate incident decision-makers too.
+        executive = User.objects.create_user(email="exec@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=executive, role="executive")
+        response = self.client.post(
+            reverse("incidents:create"),
+            {"title": "Data breach", "description": "Possible unauthorised access.", "severity": "critical", "status": "reported"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Notification.objects.filter(recipient=executive, category="incident").exists())
+
     def test_change_event_mark_reviewed(self):
         event = ChangeEvent.objects.create(organisation=self.org, event_type="new_system", reported_by=self.user)
         response = self.client.post(
