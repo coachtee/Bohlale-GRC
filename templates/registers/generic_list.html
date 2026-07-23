@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load icons dictutils %}
+{% block title %}{{ register_type.name }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ register_type.name }}</h1><p class="subtitle">{{ register_type.description }}</p></div>
+  <a class="btn btn-primary" href="{% url 'registers:generic_create' register_type.slug %}">{% icon 'plus' 'nav-icon' %} Add entry</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        {% for field in register_type.field_schema %}<th>{{ field.label }}</th>{% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for entry in entries %}
+      <tr>
+        {% for field in register_type.field_schema %}<td>{{ entry.data|get_item:field.name }}</td>{% endfor %}
+        <td><a class="btn btn-sm btn-secondary" href="{% url 'registers:generic_edit' register_type.slug entry.pk %}">Edit</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="{{ register_type.field_schema|length|add:1 }}" class="text-muted">No entries yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

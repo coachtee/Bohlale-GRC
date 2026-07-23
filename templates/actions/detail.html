@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}{{ action.reference_code }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ action.reference_code }}</h1><p class="subtitle">{{ action.get_source_display }}</p></div>
+  <a class="btn btn-secondary" href="{% url 'actions:edit' action.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+</div>
+<div class="grid grid-main-side">
+  <div class="card">
+    <h3>Finding</h3>
+    <p class="text-sm text-secondary">{{ action.finding_description }}</p>
+    <div class="divider"></div>
+    <p class="text-xs text-muted mb-1">ROOT CAUSE</p>
+    <p class="text-sm">{{ action.root_cause|default:"Not documented yet." }}</p>
+    <div class="divider"></div>
+    <p class="text-xs text-muted mb-1">CORRECTIVE ACTION</p>
+    <p class="text-sm">{{ action.action_description|default:"Not documented yet." }}</p>
+    {% if action.status == 'closed' %}
+      <div class="divider"></div>
+      <p class="text-xs text-muted mb-1">VERIFICATION</p>
+      <p class="text-sm">{{ action.verification_notes|default:"—" }}</p>
+    {% endif %}
+  </div>
+  <div>
+    <div class="card mb-3">
+      <h3>Details</h3>
+      <div class="text-sm"><strong>Owner:</strong> {{ action.owner|default:"—" }}</div>
+      <div class="text-sm"><strong>Severity:</strong> {{ action.get_severity_display }}</div>
+      <div class="text-sm"><strong>Due date:</strong> {{ action.due_date|default:"—" }}</div>
+      <div class="text-sm"><strong>Status:</strong> {{ action.get_status_display }}</div>
+    </div>
+    {% if action.status != 'closed' %}
+    <div class="card">
+      <h3>Verify &amp; close</h3>
+      <form method="post" action="{% url 'actions:verify_close' action.pk %}">
+        {% csrf_token %}
+        <textarea name="verification_notes" class="form-textarea" rows="3" placeholder="Verification evidence / notes"></textarea>
+        <div class="form-actions"><button class="btn btn-primary btn-sm" type="submit">Verify &amp; close</button></div>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

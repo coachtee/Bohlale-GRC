@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ register_type.name }} — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>{% if entry %}Edit{% else %}Add{% endif %} {{ register_type.name }} entry</h1></div></div>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-secondary" href="{% url 'registers:generic_list' register_type.slug %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Registers — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Compliance Registers</h1><p class="subtitle">Every register {{ active_organisation.name }} maintains, in one place.</p></div></div>
+
+<div class="grid grid-3">
+  {% for reg in dedicated %}
+  <a class="card" href="{% url reg.url %}" style="display:block;">
+    <div class="flex items-center gap-2 mb-2">{% icon reg.icon 'nav-icon' %}<h3 class="mb-0">{{ reg.name }}</h3></div>
+    <div class="font-bold" style="font-size:1.4rem;">{{ reg.count }}</div>
+    <div class="text-xs text-muted">entries</div>
+  </a>
+  {% endfor %}
+  {% for reg in generic %}
+  <a class="card" href="{% url reg.url.0 reg.url.1 %}" style="display:block;">
+    <div class="flex items-center gap-2 mb-2">{% icon reg.icon 'nav-icon' %}<h3 class="mb-0">{{ reg.name }}</h3></div>
+    <div class="font-bold" style="font-size:1.4rem;">{{ reg.count }}</div>
+    <div class="text-xs text-muted">entries</div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

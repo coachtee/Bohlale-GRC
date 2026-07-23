@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load icons nav %}
+{% block title %}{{ audit.title }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ audit.title }}</h1><p class="subtitle">{{ audit.reference_code }} · {{ audit.get_audit_type_display }}</p></div>
+  <div class="flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'audits:edit' audit.pk %}">{% icon 'edit' 'nav-icon' %} Edit</a>
+    {% if audit.status != 'closed' %}
+    <form method="post" action="{% url 'audits:close' audit.pk %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Close audit</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-main-side">
+  <div>
+    <div class="card mb-3">
+      <h3>Scope</h3>
+      <p class="text-sm text-secondary">{{ audit.scope|default:"—" }}</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title-row"><h3>Findings</h3></div>
+      {% for finding in audit.findings.all %}
+        <div class="list-row" style="align-items:flex-start;">
+          <div class="list-row-main">
+            <div>
+              <div class="list-row-title">{{ finding.description|truncatewords:20 }}</div>
+              <div class="list-row-meta">{{ finding.requirement|default:finding.control|default:"General" }}</div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            {% if finding.severity == 'major_nonconformity' %}<span class="badge badge-red">Major NC</span>
+            {% elif finding.severity == 'minor_nonconformity' %}<span class="badge badge-amber">Minor NC</span>
+            {% else %}<span class="badge badge-outline">Observation</span>{% endif %}
+            <a class="btn btn-sm btn-secondary" href="{% safe_url 'actions:create_from_finding' finding.pk %}">Create action</a>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-sm text-muted">No findings recorded yet.</p>
+      {% endfor %}
+
+      <div class="divider"></div>
+      <form method="post" action="{% url 'audits:add_finding' audit.pk %}">
+        {% csrf_token %}
+        {% for field in finding_form %}
+          <div class="form-row">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+          </div>
+        {% endfor %}
+        <button class="btn btn-secondary btn-sm" type="submit">Add finding</button>
+      </form>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Details</h3>
+      <div class="text-sm"><strong>Lead auditor:</strong> {{ audit.lead_auditor|default:"—" }}</div>
+      <div class="text-sm"><strong>Scheduled:</strong> {{ audit.scheduled_date|default:"—" }}</div>
+      <div class="text-sm"><strong>Status:</strong> {{ audit.get_status_display }}</div>
+      <div class="text-sm"><strong>Open major findings:</strong> {{ audit.open_major_findings_count }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
