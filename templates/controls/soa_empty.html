@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Statement of Applicability — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Statement of Applicability</h1></div></div>
+<div class="card empty-state">
+  {% icon 'control' %}
+  <p class="font-semibold mb-1">No adopted framework yet.</p>
+  <p class="text-sm mb-3">Adopt a framework first (e.g. ISO/IEC 27001) to build its Statement of Applicability.</p>
+  <a class="btn btn-primary" href="{% url 'frameworks:list' %}">Go to Frameworks</a>
+</div>
+{% endblock %}
