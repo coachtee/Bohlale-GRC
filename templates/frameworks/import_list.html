@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Framework Studio — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Framework Studio</h1>
+    <p class="subtitle">Import a custom framework: Upload → Analyse → Review → Approve → Publish.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'frameworks:import_create' %}">{% icon 'plus' 'nav-icon' %} New import</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Name</th><th>Status</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+    {% for imp in imports %}
+      <tr>
+        <td>{{ imp.proposed_name|default:"Untitled" }}</td>
+        <td><span class="badge badge-outline">{{ imp.get_status_display }}</span></td>
+        <td>{{ imp.created_at|date:"d M Y" }}</td>
+        <td>
+          {% if imp.status == 'extracted' %}<a class="btn btn-sm btn-secondary" href="{% url 'frameworks:import_review' imp.pk %}">Review</a>
+          {% elif imp.status == 'uploaded' %}<a class="btn btn-sm btn-secondary" href="{% url 'frameworks:import_analyse' imp.pk %}">Analyse</a>
+          {% elif imp.status == 'published' %}<a class="btn btn-sm btn-secondary" href="{% url 'frameworks:detail' imp.resulting_framework_id %}">View framework</a>{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="text-muted">No framework imports yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

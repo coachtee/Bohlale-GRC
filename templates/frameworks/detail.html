@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ framework.name }} — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ framework.name }}</h1>
+    <p class="subtitle">{{ framework.description }}</p>
+  </div>
+  {% if not is_adopted %}
+  <form method="post" action="{% url 'frameworks:adopt' framework.pk %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Start tracking</button></form>
+  {% else %}
+  <div class="text-right"><div class="font-bold" style="font-size:1.4rem;">{{ progress }}%</div><div class="text-xs text-muted">Requirements complete</div></div>
+  {% endif %}
+</div>
+
+{% for domain in domains %}
+<div class="card mb-3">
+  <h3>{{ domain.code }}. {{ domain.title }}</h3>
+  {% for req in domain.requirements.all %}
+    <div class="list-row" style="align-items:flex-start;">
+      <div class="list-row-main">
+        <div>
+          <div class="list-row-title">{{ req.ref_code }} — {{ req.title }}</div>
+          {% if req.guidance %}<div class="list-row-meta">{{ req.guidance }}</div>{% endif %}
+        </div>
+      </div>
+      <form method="post" action="{% url 'frameworks:requirement_status_update' req.pk %}" class="flex gap-2 items-center">
+        {% csrf_token %}
+        <select name="status" class="form-select" style="width:auto;">
+          <option value="not_started" {% if req.current_status.status == 'not_started' or not req.current_status %}selected{% endif %}>Not Started</option>
+          <option value="in_progress" {% if req.current_status.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+          <option value="complete" {% if req.current_status.status == 'complete' %}selected{% endif %}>Complete</option>
+          <option value="not_applicable" {% if req.current_status.status == 'not_applicable' %}selected{% endif %}>Not Applicable</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" type="submit">Save</button>
+      </form>
+    </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

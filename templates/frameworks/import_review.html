@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Review import — Bohlale GRC{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Review draft structure</h1><p class="subtitle">{{ fw_import.proposed_name }} — correct the extracted domains/requirements below, then publish.</p></div>
+  <span class="badge badge-amber">{{ fw_import.get_status_display }}</span>
+</div>
+
+{% if fw_import.notes %}
+<div class="card mb-3">
+  <h3>AI analysis notes</h3>
+  <p class="text-sm text-secondary" style="white-space:pre-wrap;">{{ fw_import.notes }}</p>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <h3>Draft structure (JSON)</h3>
+  <p class="form-help mb-2">Edit domains/requirements directly. Each domain needs "code", "title" and a "requirements" list of {"ref_code","title"}.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.extracted_json }}
+    <div class="form-actions">
+      <button class="btn btn-secondary" type="submit">Save changes</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Publish</h3>
+  <p class="text-sm text-secondary mb-2">Publishing creates a live framework for {{ active_organisation.name }} from the structure above. Only publish once you're satisfied it's accurate and that you hold the necessary rights to use this content.</p>
+  <form method="post" action="{% url 'frameworks:import_publish' fw_import.pk %}">
+    {% csrf_token %}
+    <button class="btn btn-primary" type="submit" {% if fw_import.status == 'published' %}disabled{% endif %}>
+      {% if fw_import.status == 'published' %}Already published{% else %}Approve &amp; publish{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}

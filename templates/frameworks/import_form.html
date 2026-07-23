@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}New framework import — Bohlale GRC{% endblock %}
+{% block content_width_class %} content-narrow{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Import a framework</h1><p class="subtitle">Upload a PDF/DOCX/XLSX/CSV, or paste the text below. AI will draft a structure for you to review.</p></div></div>
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Upload &amp; analyse</button>
+      <a class="btn btn-secondary" href="{% url 'frameworks:import_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
