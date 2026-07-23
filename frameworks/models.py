@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import models
 
 from core.models import TimeStampedModel
+from core.validators import validate_upload_file
 
 SOURCE_BUILT_IN = "built_in"
 SOURCE_CUSTOM = "custom"
@@ -212,7 +213,9 @@ class FrameworkImport(TimeStampedModel):
     organisation = models.ForeignKey(
         "tenancy.Organisation", on_delete=models.CASCADE, related_name="framework_imports"
     )
-    source_file = models.FileField(upload_to="framework_imports/", blank=True, null=True)
+    source_file = models.FileField(
+        upload_to="framework_imports/", blank=True, null=True, validators=[validate_upload_file]
+    )
     source_text = models.TextField(
         blank=True, help_text="Pasted source text, used when no file is uploaded."
     )

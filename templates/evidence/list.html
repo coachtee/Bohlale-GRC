@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Evidence — {{ active_organisation.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Evidence</h1><p class="subtitle">Supporting evidence for controls, requirements, risks and audits.</p></div>
+  <a class="btn btn-primary" href="{% url 'evidence:create' %}">{% icon 'upload' 'nav-icon' %} Upload evidence</a>
+</div>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Owner</th><th>Status</th><th>Expiry</th></tr></thead>
+    <tbody>
+    {% for item in evidence_items %}
+      <tr>
+        <td>{{ item.reference_code }}</td>
+        <td><a href="{% url 'evidence:detail' item.pk %}">{{ item.name }}</a></td>
+        <td>{{ item.get_evidence_type_display }}</td>
+        <td>{{ item.owner|default:"—" }}</td>
+        <td>
+          {% if item.verification_status == 'verified' %}<span class="badge badge-green">Verified</span>
+          {% elif item.verification_status == 'rejected' %}<span class="badge badge-red">Rejected</span>
+          {% else %}<span class="badge badge-outline">Unverified</span>{% endif %}
+        </td>
+        <td>
+          {% if item.is_expired %}<span class="badge badge-red">Expired</span>
+          {% elif item.is_expiring_soon %}<span class="badge badge-amber">Expiring soon</span>
+          {% elif item.expiry_date %}{{ item.expiry_date|date:"d M Y" }}{% else %}—{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-muted">No evidence uploaded yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

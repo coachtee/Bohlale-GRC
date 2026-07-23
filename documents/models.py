@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 
 from core.models import ReferenceCodeMixin, TenantScopedModel
+from core.validators import validate_upload_file
 
 DOC_TYPE_CHOICES = [
     ("isms_scope", "ISMS Scope"),
@@ -80,7 +81,9 @@ class Document(ReferenceCodeMixin, TenantScopedModel):
     related_frameworks = models.ManyToManyField("frameworks.Framework", blank=True, related_name="documents")
     related_requirements = models.ManyToManyField("frameworks.Requirement", blank=True, related_name="documents")
 
-    attachment = models.FileField(upload_to=document_upload_path, blank=True, null=True)
+    attachment = models.FileField(
+        upload_to=document_upload_path, blank=True, null=True, validators=[validate_upload_file]
+    )
 
     ai_generated = models.BooleanField(default=False)
     ai_generation = models.ForeignKey(
