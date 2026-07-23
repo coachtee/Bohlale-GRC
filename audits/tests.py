@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import User
+from notifications.models import Notification
 from tenancy.models import Membership, Organisation
 
 from .models import Audit, AuditFinding
@@ -48,6 +49,16 @@ class AuditFlowTests(TestCase):
         self.audit.refresh_from_db()
         self.assertEqual(self.audit.status, "closed")
         self.assertIsNotNone(self.audit.closed_at)
+
+    def test_assigning_lead_auditor_on_create_notifies_them(self):
+        auditor = User.objects.create_user(email="auditor@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=auditor, role="internal_auditor")
+        response = self.client.post(
+            reverse("audits:create"),
+            {"title": "Q3 Internal Audit", "audit_type": "internal", "status": "planned", "lead_auditor": auditor.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Notification.objects.filter(recipient=auditor, category="audit").exists())
 
 
 class AuditTenantIsolationTests(TestCase):

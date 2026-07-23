@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -67,6 +68,39 @@ class DashboardTenantIsolationTests(TestCase):
     def test_dashboard_never_shows_other_org_data(self):
         response = self.client.get(reverse("core:dashboard"))
         self.assertNotContains(response, "Org B secret risk")
+
+
+class RateLimitTests(TestCase):
+    """Login brute-force protection (spec §45: "rate limiting where appropriate")."""
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user(email="a@example.com", password="StrongPass123!")
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_login_is_rate_limited_after_repeated_attempts(self):
+        for _ in range(10):
+            response = self.client.post(
+                reverse("accounts:login"), {"username": "a@example.com", "password": "wrong"}
+            )
+            self.assertEqual(response.status_code, 200)
+        blocked = self.client.post(
+            reverse("accounts:login"), {"username": "a@example.com", "password": "wrong"}
+        )
+        self.assertEqual(blocked.status_code, 429)
+
+    def test_successful_login_still_works_under_the_limit(self):
+        response = self.client.post(
+            reverse("accounts:login"), {"username": "a@example.com", "password": "StrongPass123!"}
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_page_reloads_do_not_count_against_the_login_limit(self):
+        for _ in range(20):
+            response = self.client.get(reverse("accounts:login"))
+            self.assertEqual(response.status_code, 200)
 
 
 class SeedNibsDemoTests(TestCase):

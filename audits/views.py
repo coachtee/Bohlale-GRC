@@ -1,11 +1,12 @@
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 
 from activity.utils import log_activity
 from core.base_views import TenantCreateView, TenantDeleteView, TenantDetailView, TenantListView, TenantUpdateView
 from core.permissions import get_object_or_404_scoped, require_editor
+from notifications.utils import notify
 
 from .forms import AuditFindingForm, AuditForm
 from .models import Audit
@@ -33,6 +34,17 @@ class AuditCreateView(TenantCreateView):
     form_class = AuditForm
     template_name = "core/generic_form.html"
     extra_context = {"form_title": "Plan an audit", "cancel_url": reverse_lazy("audits:list")}
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if self.object.lead_auditor and self.object.lead_auditor != self.request.user:
+            when = f" on {self.object.scheduled_date:%d %b %Y}" if self.object.scheduled_date else ""
+            notify(
+                self.request.organisation, self.object.lead_auditor,
+                f"You've been assigned as lead auditor for {self.object.title}{when}.",
+                category="audit", link=reverse("audits:detail", args=[self.object.pk]), send_email=True,
+            )
+        return response
 
     def get_success_url(self):
         return reverse_lazy("audits:detail", args=[self.object.pk])

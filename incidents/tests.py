@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import User
+from notifications.models import Notification
 from tenancy.models import Membership, Organisation
 
 from .models import ChangeEvent, Incident
@@ -41,6 +42,19 @@ class IncidentReportFlowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         incident = Incident.objects.get(title="Lost laptop")
         self.assertEqual(incident.discovered_by, self.user)
+
+    def test_reporting_incident_notifies_org_admins(self):
+        admin = User.objects.create_user(email="admin@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=admin, role="org_admin")
+        response = self.client.post(
+            reverse("incidents:create"),
+            {
+                "title": "Suspicious login", "description": "Multiple failed attempts.",
+                "severity": "high", "status": "reported",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Notification.objects.filter(recipient=admin, category="incident").exists())
 
     def test_change_event_mark_reviewed(self):
         event = ChangeEvent.objects.create(organisation=self.org, event_type="new_system", reported_by=self.user)

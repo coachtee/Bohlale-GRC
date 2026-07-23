@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from activity.utils import log_activity
 from core.permissions import get_object_or_404_scoped, require_editor, require_organisation
+from core.ratelimit import rate_limit
 from frameworks.models import Framework
 from knowledge.models import STATUS_AI_INFERENCE, STATUS_VERIFIED
 from knowledge.services import set_item
@@ -247,6 +248,7 @@ def information_request_create(request, step_id=None):
     return render(request, "journeys/information_request_form.html", {"form": form, "step": step})
 
 
+@rate_limit("info_request_respond", limit=30, window_seconds=300)
 def information_request_respond(request, token):
     """Public, token-authenticated response page — no login required,
     limited strictly to this one request (spec §12: secure limited-access

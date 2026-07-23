@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 
 from activity.utils import log_activity
 from core.base_views import TenantCreateView, TenantDeleteView, TenantDetailView, TenantListView, TenantUpdateView
 from core.permissions import get_object_or_404_scoped, require_editor, require_organisation
+from notifications.utils import notify
+from tenancy.models import Membership
 
 from .forms import ChangeEventForm, IncidentForm
 from .models import ChangeEvent, Incident
@@ -30,7 +32,18 @@ class IncidentCreateView(TenantCreateView):
 
     def form_valid(self, form):
         form.instance.discovered_by = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        link = reverse("incidents:detail", args=[self.object.pk])
+        admins = Membership.objects.filter(
+            organisation=self.request.organisation, is_active=True, role__in=["org_admin", "consultant"]
+        ).exclude(user=self.request.user).select_related("user")
+        for membership in admins:
+            notify(
+                self.request.organisation, membership.user,
+                f"New {self.object.get_severity_display().lower()} severity incident reported: {self.object.title}",
+                category="incident", link=link, send_email=True,
+            )
+        return response
 
     def get_success_url(self):
         return reverse_lazy("incidents:detail", args=[self.object.pk])

@@ -2,16 +2,19 @@
 Scheduled overdue/due-soon scan (spec §36). Intended to run from cron
 (see DEPLOYMENT.md) — no Celery/Redis required, per spec §39. Creates
 in-app (+ optional email) notifications for: overdue corrective
-actions, documents due/overdue for review, evidence expiring soon, and
-risks past their treatment due date. Deduplicates against
-already-unread notifications for the same object so re-running this
-daily doesn't spam recipients.
+actions, documents due/overdue for review, evidence expiring soon,
+risks past their treatment due date, and upcoming/overdue audit dates.
+Deduplicates against already-unread notifications for the same object
+so re-running this daily doesn't spam recipients.
 """
+
+import datetime
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from actions.models import STATUS_CLOSED, CorrectiveAction
+from audits.models import Audit
 from documents.models import STATUS_ARCHIVED, Document
 from evidence.models import Evidence
 from notifications.models import Notification
@@ -42,6 +45,7 @@ class Command(BaseCommand):
         created += self._scan_documents()
         created += self._scan_evidence()
         created += self._scan_risks()
+        created += self._scan_audits()
         self.stdout.write(self.style.SUCCESS(f"Created {created} notification(s)."))
 
     def _notify_owner_or_admins(self, organisation, owner, message, category, link):
@@ -103,5 +107,21 @@ class Command(BaseCommand):
                 risk.organisation, risk.owner,
                 f"Risk treatment overdue: {risk.title}",
                 "risk_review", link,
+            )
+        return count
+
+    def _scan_audits(self):
+        today = timezone.now().date()
+        soon = today + datetime.timedelta(days=7)
+        count = 0
+        for audit in Audit.objects.filter(
+            scheduled_date__isnull=False, scheduled_date__lte=soon, status="planned"
+        ):
+            link = f"/audits/{audit.pk}/"
+            verb = "is overdue to begin" if audit.scheduled_date < today else "is coming up soon"
+            count += self._notify_owner_or_admins(
+                audit.organisation, audit.lead_auditor,
+                f"Audit '{audit.title}' {verb} ({audit.scheduled_date}).",
+                "audit_date", link,
             )
         return count

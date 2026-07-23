@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from actions.models import CorrectiveAction
+from audits.models import Audit
 from documents.models import Document
 from evidence.models import Evidence
 from risks.models import Risk
@@ -61,6 +62,14 @@ class ScanOverdueTests(TestCase):
         )
         call_command("scan_overdue")
         self.assertTrue(Notification.objects.filter(recipient=self.owner, category="risk_review").exists())
+
+    def test_audit_due_soon_notifies_lead_auditor(self):
+        Audit.objects.create(
+            organisation=self.org, title="Q3 Internal Audit", lead_auditor=self.owner,
+            scheduled_date=self.today + datetime.timedelta(days=3), status="planned",
+        )
+        call_command("scan_overdue")
+        self.assertTrue(Notification.objects.filter(recipient=self.owner, category="audit_date").exists())
 
     def test_no_owner_falls_back_to_org_admins(self):
         admin = User.objects.create_user(email="admin@example.com", password="x")
