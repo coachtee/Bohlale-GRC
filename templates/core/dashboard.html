@@ -203,7 +203,7 @@
           <div class="list-row-main">
             <span class="status-dot grey" style="margin-top:6px;"></span>
             <div>
-              <div class="list-row-title">{{ log.actor|default:"System" }} {{ log.action }}</div>
+              <div class="list-row-title">{{ log.actor.display_name|default:"System" }} {{ log.action }}</div>
               <div class="list-row-meta">{{ log.created_at|timesince }} ago</div>
             </div>
           </div>

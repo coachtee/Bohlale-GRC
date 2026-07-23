@@ -10,17 +10,18 @@ def _client_ip(request):
     return request.META.get("REMOTE_ADDR")
 
 
-def log_activity(request, action, target=None, description="", organisation=None, metadata=None):
+def log_activity(request, action, target=None, description="", organisation=None, metadata=None, actor=None):
     """
     Write one immutable audit trail entry.
 
     `request` may be a real HttpRequest (actor/organisation/IP are
     derived from it) or None for system/management-command actions, in
-    which case pass `organisation` explicitly if applicable.
+    which case pass `organisation` explicitly if applicable and,
+    optionally, `actor` to attribute the entry to a specific user (e.g.
+    from a management command seeding demo data) rather than "System".
     """
     from .models import AuditLog
 
-    actor = None
     org = organisation
     ip = None
     if request is not None:

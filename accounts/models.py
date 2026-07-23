@@ -60,8 +60,11 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        full_name = self.get_full_name()
-        return f"{full_name} <{self.email}>" if full_name else self.email
+        # Deliberately just the display name (not "Name <email>") since
+        # this is what every app template renders for owner/actor/
+        # approver fields throughout the UI; Django admin shows the
+        # email separately via UserAdmin.list_display.
+        return self.display_name
 
     @property
     def display_name(self):

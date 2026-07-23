@@ -132,6 +132,14 @@ ul { margin: 0; padding: 0; list-style: none; }
   flex-direction: column;
 }
 
+/* Hidden by default (desktop): this is a mobile-only tap-to-close
+   overlay behind the sidebar drawer. Without this, the empty div would
+   otherwise be auto-placed as its own grid item ahead of .sidebar in
+   .app-shell's implicit grid, pushing every subsequent item (the
+   sidebar itself, then .main-col) one track over/down. Re-shown by the
+   mobile media query below when the sidebar drawer is open. */
+.sidebar-backdrop { display: none; }
+
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -165,7 +173,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .nav-link:hover { background: var(--color-grey-100); color: var(--text-primary); }
 .nav-link.active { background: var(--color-black); color: var(--color-white); }
-.nav-link .nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+/* Default icon size — applies wherever {% icon %} is used without a
+   more specific sizing context (icon-btn, qa-icon, etc. override via
+   higher-specificity rules below). Without this, a bare <svg
+   class="nav-icon"> with only a viewBox has no intrinsic size and can
+   render arbitrarily large in some browsers/layouts. */
+.nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
 .nav-link .nav-sub { display: block; font-size: 0.72rem; opacity: 0.7; font-weight: 400; }
 
 .sidebar-help {
