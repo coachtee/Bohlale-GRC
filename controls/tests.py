@@ -130,3 +130,28 @@ class ControlFormIDORTests(TestCase):
         control = Control.objects.filter(name="New control").first()
         if control is not None:
             self.assertNotIn(self.requirement_b, control.framework_requirements.all())
+
+
+class SoAExportTenantIsolationTests(TestCase):
+    def setUp(self):
+        call_command("seed_frameworks")
+        self.org_a = Organisation.objects.create(name="Org A")
+        self.org_b = Organisation.objects.create(name="Org B")
+        self.user_a = User.objects.create_user(email="a3@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org_a, user=self.user_a, role="org_admin")
+        self.framework = Framework.objects.get(code="ISO27001")
+        adopt_framework(self.org_a, self.framework)
+        adopt_framework(self.org_b, self.framework)
+
+        control_a = Control.objects.create(organisation=self.org_a, name="Org A visible control")
+        SoAEntry.objects.create(organisation=self.org_a, framework=self.framework, control=control_a)
+        control_b = Control.objects.create(organisation=self.org_b, name="Org B secret control")
+        SoAEntry.objects.create(organisation=self.org_b, framework=self.framework, control=control_b)
+
+        self.client.login(email="a3@example.com", password="StrongPass123!")
+
+    def test_soa_csv_export_excludes_other_org(self):
+        response = self.client.get(reverse("controls:soa_export_csv"), {"framework": str(self.framework.pk)})
+        content = response.content.decode()
+        self.assertIn("Org A visible control", content)
+        self.assertNotIn("Org B secret control", content)

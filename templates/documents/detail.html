@@ -47,7 +47,12 @@
         <form method="post" action="{% url 'documents:publish' document.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm w-full" type="submit">Publish</button></form>
         {% else %}<p class="text-sm text-muted">Approved — awaiting publish by an Administrator/Executive.</p>{% endif %}
       {% elif document.status == 'published' %}
-        <p class="text-sm text-secondary">Published {{ document.effective_date|date:"d M Y" }}.</p>
+        <p class="text-sm text-secondary mb-2">Published {{ document.effective_date|date:"d M Y" }}.</p>
+        {% if can_administer %}
+        <form method="post" action="{% url 'documents:archive' document.pk %}" data-confirm="Archive '{{ document.title }}'? It will no longer count as an in-force controlled document.">{% csrf_token %}<button class="btn btn-secondary btn-sm w-full" type="submit">Archive</button></form>
+        {% endif %}
+      {% elif document.status == 'archived' %}
+        <p class="text-sm text-muted">Archived — retained for audit history only.</p>
       {% endif %}
     </div>
 

@@ -12,7 +12,7 @@ from knowledge.services import set_item
 from tenancy.models import Membership, Organisation
 
 from .models import Document
-from .services import generate_draft_for_step, publish, start_revision, submit_for_approval, submit_for_review
+from .services import archive, generate_draft_for_step, publish, start_revision, submit_for_approval, submit_for_review
 
 
 class DocumentModelTests(TestCase):
@@ -63,6 +63,56 @@ class DocumentLifecycleServiceTests(TestCase):
         start_revision(self.document, self.user)
         self.assertEqual(self.document.version_label, "1.1")
         self.assertEqual(self.document.status, "draft")
+
+    def test_archive_is_terminal(self):
+        self.document.status = "published"
+        self.document.save()
+        archive(self.document, self.user)
+        self.assertEqual(self.document.status, "archived")
+        self.assertEqual(self.document.versions.count(), 1)
+
+
+class DocumentArchiveWorkflowTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(name="NIBS")
+        self.admin = User.objects.create_user(email="admin@example.com", password="StrongPass123!")
+        self.editor = User.objects.create_user(email="editor@example.com", password="StrongPass123!")
+        Membership.objects.create(organisation=self.org, user=self.admin, role="org_admin")
+        Membership.objects.create(organisation=self.org, user=self.editor, role="document_owner")
+        self.document = Document.objects.create(organisation=self.org, title="Old Policy", status="published")
+
+    def test_admin_can_archive_published_document(self):
+        self.client.login(email="admin@example.com", password="StrongPass123!")
+        response = self.client.post(reverse("documents:archive", args=[self.document.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.status, "archived")
+
+    def test_editor_cannot_archive_document(self):
+        self.client.login(email="editor@example.com", password="StrongPass123!")
+        response = self.client.post(reverse("documents:archive", args=[self.document.pk]))
+        self.assertEqual(response.status_code, 403)
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.status, "published")
+
+    def test_archived_document_cannot_be_edited(self):
+        self.document.status = "archived"
+        self.document.save()
+        self.client.login(email="admin@example.com", password="StrongPass123!")
+        response = self.client.post(
+            reverse("documents:edit", args=[self.document.pk]), {"content": "Tampered content", "change_reason": ""}
+        )
+        self.assertEqual(response.status_code, 403)
+        self.document.refresh_from_db()
+        self.assertNotEqual(self.document.content, "Tampered content")
+
+    def test_cannot_publish_a_draft_directly(self):
+        draft = Document.objects.create(organisation=self.org, title="Brand new draft", status="draft")
+        self.client.login(email="admin@example.com", password="StrongPass123!")
+        response = self.client.post(reverse("documents:publish", args=[draft.pk]))
+        self.assertEqual(response.status_code, 302)
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, "draft")
 
 
 class AIDraftGovernanceTests(TestCase):

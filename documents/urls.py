@@ -14,4 +14,5 @@ urlpatterns = [
     path("<uuid:pk>/submit-review/", views.document_submit_review, name="submit_review"),
     path("<uuid:pk>/submit-approval/", views.document_submit_approval, name="submit_approval"),
     path("<uuid:pk>/publish/", views.document_publish, name="publish"),
+    path("<uuid:pk>/archive/", views.document_archive, name="archive"),
 ]

@@ -3,7 +3,14 @@ from django.utils import timezone
 from ai import service as ai_service
 from knowledge.services import verified_context_text
 
-from .models import STATUS_AWAITING_APPROVAL, STATUS_DRAFT, STATUS_PUBLISHED, STATUS_UNDER_REVIEW, Document
+from .models import (
+    STATUS_ARCHIVED,
+    STATUS_AWAITING_APPROVAL,
+    STATUS_DRAFT,
+    STATUS_PUBLISHED,
+    STATUS_UNDER_REVIEW,
+    Document,
+)
 
 STEP_DOC_TYPE_TO_PURPOSE = {
     "isms_scope": "isms_scope",
@@ -63,6 +70,16 @@ def publish(document, user):
 
         edited = document.content.strip() != document.ai_generation.output_text.strip()
         document.ai_generation.mark_reviewed(user, AI_EDITED if edited else AI_APPROVED)
+    return document
+
+
+def archive(document, user):
+    """Archived is a terminal state (spec §14): a published document
+    that is no longer in force but must be retained for audit history
+    rather than deleted."""
+    document.status = STATUS_ARCHIVED
+    document.snapshot_version(user, change_reason="Archived")
+    document.save(update_fields=["status", "updated_at"])
     return document
 
 

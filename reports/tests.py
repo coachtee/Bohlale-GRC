@@ -97,3 +97,16 @@ class ReportTenantIsolationTests(TestCase):
     def test_risk_register_report_excludes_other_org(self):
         response = self.client.get(reverse("reports:risk_register"))
         self.assertNotContains(response, "Org B secret risk")
+
+    def test_risk_register_excel_export_excludes_other_org(self):
+        import io
+
+        import openpyxl
+
+        Risk.objects.create(organisation=self.org_a, title="Org A visible risk", likelihood=1, impact=1)
+        response = self.client.get(reverse("reports:risk_register"), {"format": "xlsx"})
+        workbook = openpyxl.load_workbook(io.BytesIO(response.content))
+        sheet = workbook.active
+        cell_values = [cell.value for row in sheet.iter_rows() for cell in row]
+        self.assertIn("Org A visible risk", cell_values)
+        self.assertNotIn("Org B secret risk", cell_values)
