@@ -75,9 +75,9 @@ class Framework(TimeStampedModel):
         null=True,
         blank=True,
     )
-    code = models.CharField(max_length=40)
+    code = models.CharField(max_length=255)
     name = models.CharField(max_length=200)
-    version = models.CharField(max_length=40, blank=True)
+    version = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     category = models.ForeignKey(
         FrameworkCategory,
@@ -87,7 +87,7 @@ class Framework(TimeStampedModel):
         related_name="frameworks",
     )
     icon = models.CharField(
-        max_length=40, blank=True, default="framework",
+        max_length=255, blank=True, default="framework",
         help_text="Icon key from core.templatetags.icons — see the icon set there.",
     )
     status = models.CharField(max_length=20, choices=FRAMEWORK_STATUS_CHOICES, default=STATUS_ACTIVE)
@@ -122,7 +122,7 @@ class Domain(TimeStampedModel):
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, related_name="children", null=True, blank=True
     )
-    code = models.CharField(max_length=40, blank=True)
+    code = models.CharField(max_length=255, blank=True)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
@@ -142,7 +142,7 @@ class Requirement(TimeStampedModel):
     domain = models.ForeignKey(
         Domain, on_delete=models.CASCADE, related_name="requirements", null=True, blank=True
     )
-    ref_code = models.CharField(max_length=40, blank=True)
+    ref_code = models.CharField(max_length=255, blank=True)
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)
     guidance = models.TextField(
