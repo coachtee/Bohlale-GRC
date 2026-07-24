@@ -53,13 +53,43 @@ Every step is idempotent - re-running it is safe.
    exists (a normal fresh install).
 6. **Starts the stack** (`postgres`, then `bohlale-grc` once Postgres
    reports healthy). On every start, the container's own entrypoint
-   applies migrations and seeds the built-in Framework Library (ISO
-   27001, ISO 27701, POPIA, PAIA, ISO 22301, ISO 9001, ISO 31000, NIST
-   CSF, CIS Controls v8, King IV) — idempotent, so a fresh deployment's
-   Framework Library is populated automatically, never empty.
+   first checks for **migration drift** (see below), then applies
+   migrations and seeds the built-in Framework Library (ISO 27001, ISO
+   27701, POPIA, PAIA, ISO 22301, ISO 9001, ISO 31000, NIST CSF, CIS
+   Controls v8, King IV) — idempotent, so a fresh deployment's Framework
+   Library is populated automatically, never empty.
 7. **Waits for the app to report healthy** (a real database round-trip
    via `/health/`, not just "the container is running") and prints
    connection details, useful commands, and admin-account instructions.
+
+### Migration drift check
+
+Before running migrations, `entrypoint.sh` runs `python manage.py
+makemigrations --check --dry-run`. If any model has changed without a
+matching migration file being committed, the container refuses to
+start and prints exactly which fields drifted and how to fix it,
+instead of starting anyway and risking a hard crash the first time
+something tries to write data that no longer fits the live schema (or
+worse, silent truncation on a database that doesn't enforce column
+length as strictly as PostgreSQL does). This exists because of a real
+incident: a `models.py` field was widened directly via a GitHub web-UI
+edit without `makemigrations` being run, which crashed the container
+deep inside a later management command — Gunicorn never started, and
+the failure looked from the outside like a database-connectivity
+problem. If you ever see the container refuse to start with an
+`[entrypoint] FATAL: one or more models have changed without a
+matching migration` message: run `python manage.py makemigrations`
+locally, commit the generated migration file(s), and redeploy. Skip
+this check only in the rare case it's a false positive, via
+`CHECK_MIGRATION_DRIFT=false` in `.env`.
+
+This toolkit has also been verified against a real **Coolify**
+deployment (Ubuntu 24.04, Traefik, PostgreSQL provisioned as a Coolify
+service) — Coolify builds directly from this repo's `Dockerfile` (not
+`compose.yml`) and supplies `DB_*`/`DJANGO_*` values as both build
+`ARG`s and container runtime environment variables; `entrypoint.sh`
+and the `HEALTHCHECK` in the `Dockerfile` work unmodified under that
+setup.
 
 ## Before you deploy for real
 
