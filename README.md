@@ -22,11 +22,14 @@ cp .env.example .env
 # edit .env if needed — defaults work out of the box with SQLite
 
 python manage.py migrate
-python manage.py seed_nibs_demo   # creates fictional NIBS demo tenant + sample data
+python manage.py seed_frameworks  # seeds the built-in Framework Library (idempotent)
+python manage.py seed_nibs_demo   # creates fictional NIBS demo tenant + sample data (also seeds frameworks itself)
 python manage.py runserver
 ```
 
 Visit http://127.0.0.1:8000/ and log in with the demo credentials printed by `seed_nibs_demo` (see command output / `BUILD_STATUS.md`).
+
+`seed_frameworks` seeds the Framework Library — ISO/IEC 27001:2022, ISO/IEC 27701, POPIA, PAIA, ISO 22301, ISO 9001, ISO 31000, NIST Cybersecurity Framework, CIS Controls v8 and King IV — independently of the demo data, so it's the one step every real deployment needs even without `seed_nibs_demo`. It also runs automatically on every Docker container start (`entrypoint.sh`) and is a documented step in `DEPLOYMENT.md` for the non-Docker path.
 
 ## Running tests
 

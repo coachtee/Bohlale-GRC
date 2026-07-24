@@ -52,7 +52,11 @@ Every step is idempotent - re-running it is safe.
    under `./backups/` regardless. Skipped entirely if no `db.sqlite3`
    exists (a normal fresh install).
 6. **Starts the stack** (`postgres`, then `bohlale-grc` once Postgres
-   reports healthy).
+   reports healthy). On every start, the container's own entrypoint
+   applies migrations and seeds the built-in Framework Library (ISO
+   27001, ISO 27701, POPIA, PAIA, ISO 22301, ISO 9001, ISO 31000, NIST
+   CSF, CIS Controls v8, King IV) — idempotent, so a fresh deployment's
+   Framework Library is populated automatically, never empty.
 7. **Waits for the app to report healthy** (a real database round-trip
    via `/health/`, not just "the container is running") and prints
    connection details, useful commands, and admin-account instructions.

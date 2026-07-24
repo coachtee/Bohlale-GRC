@@ -6,17 +6,22 @@
 #
 #   1. wait for the database to accept connections (Postgres only)
 #   2. run migrations
-#   3. collect static files (for WhiteNoise)
-#   4. optionally create a superuser from env vars, if one doesn't exist
-#   5. exec the container's CMD (gunicorn by default)
+#   3. seed the built-in Framework Library, if this project has one
+#   4. collect static files (for WhiteNoise)
+#   5. optionally create a superuser from env vars, if one doesn't exist
+#   6. exec the container's CMD (gunicorn by default)
 #
 # Nothing here is specific to Bohlale GRC - it only relies on `manage.py`
 # existing at /app and on the DB_* / DJANGO_SUPERUSER_* env var convention,
-# so this file can be reused unchanged by other Django projects.
+# so this file can be reused unchanged by other Django projects. Step 3
+# specifically checks the `seed_frameworks` management command actually
+# exists before calling it, so this stays true for a project (Bohlale
+# Learn/Health/Notes) that doesn't have one - it's skipped, not an error.
 #
 # Each step can be individually disabled via env vars for special cases
 # (e.g. running a one-off shell without re-running migrations):
 #   RUN_MIGRATIONS=false
+#   SEED_FRAMEWORK_LIBRARY=false
 #   RUN_COLLECTSTATIC=false
 #   WAIT_FOR_DB=false
 
@@ -27,6 +32,7 @@ log() {
 }
 
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
+SEED_FRAMEWORK_LIBRARY="${SEED_FRAMEWORK_LIBRARY:-true}"
 RUN_COLLECTSTATIC="${RUN_COLLECTSTATIC:-true}"
 WAIT_FOR_DB="${WAIT_FOR_DB:-true}"
 DB_WAIT_TIMEOUT="${DB_WAIT_TIMEOUT:-60}"
@@ -84,6 +90,19 @@ run_migrations() {
     python manage.py migrate --noinput
 }
 
+seed_framework_library() {
+    if [ "$SEED_FRAMEWORK_LIBRARY" != "true" ]; then
+        log "SEED_FRAMEWORK_LIBRARY=false - skipping Framework Library seed."
+        return 0
+    fi
+    if ! python manage.py help seed_frameworks >/dev/null 2>&1; then
+        log "No 'seed_frameworks' management command in this project - skipping (this entrypoint is shared across Bohlale projects)."
+        return 0
+    fi
+    log "Seeding the built-in Framework Library (idempotent)..."
+    python manage.py seed_frameworks
+}
+
 collect_static() {
     if [ "$RUN_COLLECTSTATIC" != "true" ]; then
         log "RUN_COLLECTSTATIC=false - skipping collectstatic."
@@ -129,6 +148,7 @@ PYEOF
 main() {
     wait_for_postgres
     run_migrations
+    seed_framework_library
     collect_static
     create_superuser_if_configured
 

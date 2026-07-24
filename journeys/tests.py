@@ -116,7 +116,7 @@ class OnboardingFlowTests(TestCase):
         self.assertRedirects(response, reverse("journeys:onboarding_framework"))
 
         framework = Framework.objects.get(code="ISO27001")
-        response = self.client.post(reverse("journeys:onboarding_framework"), {"framework_id": str(framework.pk)})
+        response = self.client.post(reverse("journeys:onboarding_framework"), {"framework_ids": [str(framework.pk)]})
         self.assertRedirects(
             response,
             reverse("journeys:onboarding_start", args=[framework.pk, "build_from_scratch"]),
@@ -127,6 +127,32 @@ class OnboardingFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(OrganisationJourney.objects.filter(organisation=self.org).exists())
         self.assertContains(response, "Understand your organisation")
+
+    def test_selecting_multiple_frameworks_adopts_all_and_starts_journey_for_the_first(self):
+        self.client.post(reverse("journeys:onboarding_goal"), {"goal_type": "build_from_scratch"})
+        primary = Framework.objects.get(code="ISO27001")
+        secondary = Framework.objects.get(code="POPIA")
+
+        response = self.client.post(
+            reverse("journeys:onboarding_framework"),
+            {"framework_ids": [str(primary.pk), str(secondary.pk)]},
+        )
+        self.assertRedirects(
+            response,
+            reverse("journeys:onboarding_start", args=[primary.pk, "build_from_scratch"]),
+            fetch_redirect_response=False,
+        )
+        self.client.get(response.url)
+
+        self.assertTrue(self.org.framework_adoptions.filter(framework=primary).exists())
+        self.assertTrue(self.org.framework_adoptions.filter(framework=secondary).exists())
+        self.assertTrue(OrganisationJourney.objects.filter(organisation=self.org, template__framework=primary).exists())
+
+    def test_no_framework_selected_shows_error(self):
+        self.client.post(reverse("journeys:onboarding_goal"), {"goal_type": "build_from_scratch"})
+        response = self.client.post(reverse("journeys:onboarding_framework"), {"framework_ids": []})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(OrganisationJourney.objects.filter(organisation=self.org).exists())
 
     def test_popia_goal_skips_framework_picker(self):
         response = self.client.post(reverse("journeys:onboarding_goal"), {"goal_type": "popia_assessment"}, follow=True)

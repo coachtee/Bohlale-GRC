@@ -48,13 +48,33 @@ def onboarding_goal(request):
 
 @require_organisation
 def onboarding_framework(request):
+    from frameworks.services import adopt_framework as adopt_framework_service
+
     goal = request.session.get("onboarding_goal", "build_from_scratch")
     frameworks = Framework.objects.filter(
         Q(organisation__isnull=True) | Q(organisation=request.organisation), is_published=True
     ).order_by("name")
     if request.method == "POST":
-        framework_id = request.POST.get("framework_id")
-        return redirect("journeys:onboarding_start", framework_id=framework_id, goal_type=goal)
+        framework_ids = request.POST.getlist("framework_ids")
+        if not framework_ids:
+            messages.error(request, "Select at least one framework to continue.")
+            return render(request, "journeys/onboarding_framework.html", {"frameworks": frameworks, "goal": goal})
+
+        by_id = {str(fw.pk): fw for fw in frameworks.filter(pk__in=framework_ids)}
+        selected = [by_id[fid] for fid in framework_ids if fid in by_id]
+        if not selected:
+            messages.error(request, "Select at least one framework to continue.")
+            return render(request, "journeys/onboarding_framework.html", {"frameworks": frameworks, "goal": goal})
+        primary, extra = selected[0], selected[1:]
+        for framework in extra:
+            adopt_framework_service(request.organisation, framework)
+        if extra:
+            messages.info(
+                request,
+                f"{', '.join(fw.name for fw in extra)} — added to your Framework Library for tracking. "
+                f"Your guided journey will walk you through {primary.name} first.",
+            )
+        return redirect("journeys:onboarding_start", framework_id=primary.pk, goal_type=goal)
     return render(request, "journeys/onboarding_framework.html", {"frameworks": frameworks, "goal": goal})
 
 

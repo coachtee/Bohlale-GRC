@@ -147,5 +147,31 @@ it correctly reflects the source document and that you hold the necessary rights
 to use its content within your organisation.
 """)
 
+    def _handle_control_explanation(self, prompt):
+        return _wrap(f"""
+CONTROL EXPLANATION (AI-generated — for guidance only):
+{prompt}
+
+In plain language, this control area exists to reduce a specific, identifiable risk to
+the organisation's information, operations or obligations. It is typically satisfied by
+a combination of a documented policy/procedure, an assigned owner, and evidence that the
+control is actually operating day to day (not just written down). Consider: who is
+responsible for this control today, what would demonstrate it is working, and how often
+it should be reviewed. Human review is required before relying on this explanation.
+""")
+
+    def _handle_framework_guidance(self, prompt):
+        return _wrap(f"""
+IMPLEMENTATION GUIDANCE (AI-generated draft — requires human review):
+{prompt}
+
+Suggested next steps: confirm which of these requirements already have an owner and a
+documented policy/procedure; identify the two or three highest-priority gaps to close
+first; and decide what evidence would demonstrate each requirement is met so progress can
+be tracked over time. This guidance is a starting point only — a qualified reviewer
+should confirm it is appropriate for the organisation's actual context before it is
+acted on.
+""")
+
     def _handle_general(self, prompt):
         return _wrap(f"AI draft response (demo mode) based on:\n{prompt}")
