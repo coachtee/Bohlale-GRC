@@ -78,10 +78,17 @@ ensure_env_file() {
     replace_env_value "DJANGO_SECRET_KEY" "$secret_key"
     replace_env_value "POSTGRES_PASSWORD" "$postgres_password"
     replace_env_value "DB_PASSWORD" "$postgres_password"
+    # .env.example ships DJANGO_DEBUG=True for the plain `manage.py runserver`
+    # local-dev workflow it's primarily written for. This function only ever
+    # runs for a Docker deployment (install.sh/update.sh/etc.), which is never
+    # the local-dev case, so force it off here rather than let a fresh
+    # production install silently boot with DEBUG=True (stack traces/settings
+    # exposed on error pages) until someone happens to notice.
+    replace_env_value "DJANGO_DEBUG" "False"
 
     chmod 600 "$ENV_FILE"
 
-    log_success "Created .env with a randomly generated DJANGO_SECRET_KEY and POSTGRES_PASSWORD."
+    log_success "Created .env with a randomly generated DJANGO_SECRET_KEY and POSTGRES_PASSWORD (DJANGO_DEBUG set to False)."
     log_warn "Review $ENV_FILE before going live: set DJANGO_ALLOWED_HOSTS, DJANGO_CSRF_TRUSTED_ORIGINS," \
         "and DJANGO_SECURE_SSL_REDIRECT/DJANGO_SESSION_COOKIE_SECURE/DJANGO_CSRF_COOKIE_SECURE=True once HTTPS is live."
 }

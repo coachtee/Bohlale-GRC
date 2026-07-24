@@ -59,9 +59,12 @@ Every step is idempotent - re-running it is safe.
 
 ## Before you deploy for real
 
-`install.sh` generates working secrets automatically, but three things in
-`.env` are placeholders you should set for your actual domain before
-exposing this to the internet:
+`install.sh` generates working secrets automatically and forces
+`DJANGO_DEBUG=False` in the `.env` it creates (the `.env.example` this is
+copied from defaults to `True` for the unrelated plain `manage.py
+runserver` local-dev workflow — a fresh Docker install always overrides
+it, so this is done for you). What's still a placeholder you must set for
+your actual domain before exposing this to the internet:
 
 ```bash
 DJANGO_ALLOWED_HOSTS=grc.yourdomain.example
