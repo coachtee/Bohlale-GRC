@@ -1,9 +1,14 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}{{ framework.name }} — {{ active_organisation.name }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>{{ framework.name }}</h1>
+    <div class="flex gap-2" style="align-items:center;">
+      {% icon framework.icon 'nav-icon' %}
+      <h1>{{ framework.name }}</h1>
+      {% if framework.category %}<span class="badge badge-outline">{{ framework.category.name }}</span>{% endif %}
+    </div>
     <p class="subtitle">{{ framework.description }}</p>
   </div>
   {% if not is_adopted %}
@@ -12,6 +17,62 @@
   <div class="text-right"><div class="font-bold" style="font-size:1.4rem;">{{ progress }}%</div><div class="text-xs text-muted">Requirements complete</div></div>
   {% endif %}
 </div>
+
+{% if related_frameworks %}
+<div class="card mb-3">
+  <h3>Cross-framework mapping</h3>
+  <p class="text-sm text-secondary mb-2">Your controls for {{ framework.name }} also satisfy requirements in:</p>
+  {% for other_framework, shared_count in related_frameworks %}
+    <a class="badge badge-blue" href="{% url 'frameworks:detail' other_framework.pk %}" style="margin-right:6px;">{{ other_framework.name }} ({{ shared_count }} control{{ shared_count|pluralize }})</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-title-row"><h3>{% icon 'sparkle' 'nav-icon' %} Model CISO Assistant</h3></div>
+  <p class="text-sm text-secondary mb-2">Ask the assistant to explain a control area, suggest evidence, or draft implementation guidance — for the whole framework, or one requirement. Every response is a draft; review before relying on it.</p>
+  <form method="post" action="{% url 'frameworks:ciso_assist' framework.pk %}" class="flex gap-2" style="flex-wrap:wrap;align-items:center;">
+    {% csrf_token %}
+    <select name="requirement_id" class="form-select" style="width:auto;flex:1;min-width:220px;">
+      <option value="">Whole framework</option>
+      {% for domain in domains %}
+        {% for req in domain.requirements.all %}
+          <option value="{{ req.pk }}">{{ req.ref_code }} — {{ req.title|truncatechars:60 }}</option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+    <button class="btn btn-secondary btn-sm" type="submit" name="action" value="explain_control">Explain control</button>
+    <button class="btn btn-secondary btn-sm" type="submit" name="action" value="suggest_evidence">Suggest evidence</button>
+    <button class="btn btn-secondary btn-sm" type="submit" name="action" value="draft_guidance">Draft guidance</button>
+  </form>
+  {% if ciso_generations %}
+  <div class="divider"></div>
+  {% for gen in ciso_generations %}
+    <div class="mb-2">
+      <div class="text-xs text-muted mb-1">{{ gen.created_at|date:"d M Y H:i" }} — {{ gen.context_reference }} <a href="{% url 'ai:detail' gen.pk %}">(full record)</a></div>
+      <pre style="white-space:pre-wrap;font-family:inherit;font-size:0.84rem;margin:0;">{{ gen.output_text|truncatewords:80 }}</pre>
+    </div>
+  {% endfor %}
+  {% endif %}
+</div>
+
+{% if can_edit_structure %}
+<div class="card mb-3">
+  <h3>Add a domain</h3>
+  <form method="post" action="{% url 'frameworks:domain_create' framework.pk %}" class="flex gap-2" style="align-items:flex-end;">
+    {% csrf_token %}
+    <div class="form-row" style="flex:1;margin:0;">
+      <label for="{{ domain_form.title.id_for_label }}">Domain title</label>
+      {{ domain_form.title }}
+    </div>
+    <div class="form-row" style="width:140px;margin:0;">
+      <label for="{{ domain_form.code.id_for_label }}">Code (optional)</label>
+      {{ domain_form.code }}
+    </div>
+    <button class="btn btn-primary btn-sm" type="submit">Add domain</button>
+  </form>
+</div>
+{% endif %}
 
 {% for domain in domains %}
 <div class="card mb-3">
@@ -36,6 +97,29 @@
       </form>
     </div>
   {% endfor %}
+  {% if can_edit_structure %}
+    <div class="divider"></div>
+    <form method="post" action="{% url 'frameworks:requirement_create' framework.pk domain.pk %}" class="flex gap-2" style="flex-wrap:wrap;align-items:flex-end;">
+      {% csrf_token %}
+      <div class="form-row" style="width:120px;margin:0;">
+        <label for="{{ domain.requirement_form.ref_code.id_for_label }}">Ref code</label>
+        {{ domain.requirement_form.ref_code }}
+      </div>
+      <div class="form-row" style="flex:1;min-width:200px;margin:0;">
+        <label for="{{ domain.requirement_form.title.id_for_label }}">Requirement title</label>
+        {{ domain.requirement_form.title }}
+      </div>
+      <button class="btn btn-secondary btn-sm" type="submit">Add requirement</button>
+    </form>
+  {% endif %}
 </div>
+{% empty %}
+{% if can_edit_structure %}
+<div class="card empty-state">
+  {% icon 'framework' %}
+  <p class="font-semibold mb-1">This framework has no domains yet.</p>
+  <p class="text-sm">Add a domain above, then add requirements to it, to build out this framework's structure.</p>
+</div>
+{% endif %}
 {% endfor %}
 {% endblock %}

@@ -14,7 +14,13 @@
     <p class="text-xs text-muted mb-1">IMPLEMENTATION NOTES</p>
     <p class="text-sm">{{ control.implementation_notes|default:"Not documented yet." }}</p>
     <div class="divider"></div>
-    <p class="text-xs text-muted mb-1">FRAMEWORK MAPPINGS</p>
+    <p class="text-xs text-muted mb-1">CROSS-FRAMEWORK MAPPING</p>
+    {% with mapped=control.mapped_frameworks %}
+      {% if mapped %}
+        <p class="text-sm mb-2">This control satisfies requirements in {{ mapped.count }} framework{{ mapped.count|pluralize }}: {% for fw in mapped %}<span class="badge badge-blue">{{ fw.name }}</span> {% endfor %}</p>
+      {% endif %}
+    {% endwith %}
+    <div class="text-sm text-secondary mb-1">Mapped requirements:</div>
     {% for req in control.framework_requirements.all %}<span class="badge badge-outline">{{ req.framework.code }} {{ req.ref_code }}</span> {% empty %}<span class="text-sm text-muted">None mapped.</span>{% endfor %}
   </div>
   <div>

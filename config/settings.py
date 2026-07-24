@@ -2,8 +2,11 @@
 Django settings for the Bohlale GRC project.
 
 Configuration is environment-driven (see .env.example) so the same
-codebase runs unmodified in local development (SQLite) and on a
-production VPS (PostgreSQL + Gunicorn + Nginx). See DEPLOYMENT.md.
+codebase runs unmodified in local development (SQLite), on a production
+VPS (PostgreSQL + Gunicorn + Nginx, see DEPLOYMENT.md), and in Docker
+(PostgreSQL + Gunicorn + WhiteNoise, see deployment/README.md and
+compose.yml) - no code changes between environments, only environment
+variables.
 """
 
 import os
@@ -169,6 +172,20 @@ if os.environ.get("DB_ENGINE", "sqlite") == "postgres":
             "PASSWORD": os.environ.get("DB_PASSWORD", ""),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5432"),
+            # Persistent connections: meaningful under Gunicorn's
+            # multi-worker/preload model (container or VPS alike) where
+            # opening a fresh TCP+auth handshake per request is wasteful.
+            # 0 (Django's default) disables pooling entirely if preferred.
+            "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
+            "CONN_HEALTH_CHECKS": env_bool("DB_CONN_HEALTH_CHECKS", default=True),
+            # Optional: some managed Postgres providers require SSL.
+            # Unset (the default) matches a same-network container/VPS
+            # Postgres with no TLS configured.
+            **(
+                {"OPTIONS": {"sslmode": os.environ["DB_SSLMODE"]}}
+                if os.environ.get("DB_SSLMODE")
+                else {}
+            ),
         }
     }
 else:

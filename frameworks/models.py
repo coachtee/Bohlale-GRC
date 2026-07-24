@@ -16,6 +16,41 @@ SOURCE_TYPE_CHOICES = [
     (SOURCE_IMPORTED, "Imported"),
 ]
 
+STATUS_ACTIVE = "active"
+STATUS_DRAFT = "draft"
+STATUS_RETIRED = "retired"
+
+FRAMEWORK_STATUS_CHOICES = [
+    (STATUS_ACTIVE, "Active"),
+    (STATUS_DRAFT, "Draft"),
+    (STATUS_RETIRED, "Retired"),
+]
+
+
+class FrameworkCategory(models.Model):
+    """
+    A first-class grouping section for the Framework Library (e.g.
+    "South African Compliance", "International Management Systems",
+    "Cybersecurity Frameworks"). Plain data, not a Python enum/choices
+    list, so new categories can be added by a future session (or an
+    admin) without a code change — only `order` controls where a
+    category's section appears in the library, letting a specific
+    category (South African Compliance) be pinned first.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    slug = models.SlugField(max_length=60, unique=True)
+    name = models.CharField(max_length=120)
+    description = models.CharField(max_length=300, blank=True)
+    order = models.PositiveIntegerField(default=100)
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name_plural = "Framework categories"
+
+    def __str__(self):
+        return self.name
+
 
 class Framework(TimeStampedModel):
     """
@@ -44,6 +79,18 @@ class Framework(TimeStampedModel):
     name = models.CharField(max_length=200)
     version = models.CharField(max_length=40, blank=True)
     description = models.TextField(blank=True)
+    category = models.ForeignKey(
+        FrameworkCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="frameworks",
+    )
+    icon = models.CharField(
+        max_length=40, blank=True, default="framework",
+        help_text="Icon key from core.templatetags.icons — see the icon set there.",
+    )
+    status = models.CharField(max_length=20, choices=FRAMEWORK_STATUS_CHOICES, default=STATUS_ACTIVE)
     source_type = models.CharField(max_length=20, choices=SOURCE_TYPE_CHOICES, default=SOURCE_CUSTOM)
     is_published = models.BooleanField(default=True)
     created_by = models.ForeignKey(

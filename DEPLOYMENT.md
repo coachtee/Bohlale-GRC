@@ -145,13 +145,26 @@ Create the first platform administrator:
 sudo -u bohlale .venv/bin/python manage.py createsuperuser
 ```
 
-Optionally seed the fictional NIBS demonstration tenant (safe to run in
-any environment — it only ever creates fictional sample data, never real
-client data, per the product's data-safety rule):
+Seed the built-in Framework Library (ISO 27001, ISO 27701, POPIA, PAIA,
+ISO 22301, ISO 9001, ISO 31000, NIST CSF, CIS Controls v8, King IV).
+**Not optional** — without this step the Framework Library is empty for
+every organisation on a fresh deployment. Idempotent, safe to re-run
+(e.g. after an update that changes the seeded content):
 
 ```bash
 sudo -u bohlale .venv/bin/python manage.py seed_frameworks
 sudo -u bohlale .venv/bin/python manage.py seed_journey_templates
+```
+
+Optionally, also seed the fictional NIBS demonstration tenant for a
+guided demo/UAT walkthrough (safe to run in any environment — it only
+ever creates fictional sample data, never real client data, per the
+product's data-safety rule; it calls `seed_frameworks`/
+`seed_journey_templates` again itself, so running it doesn't require the
+step above first, but production deployments serving real organisations
+should skip it):
+
+```bash
 sudo -u bohlale .venv/bin/python manage.py seed_nibs_demo
 ```
 
@@ -313,9 +326,13 @@ cd /opt/bohlale-grc/app
 sudo -u bohlale git pull origin main
 sudo -u bohlale .venv/bin/pip install -r requirements.txt
 sudo -u bohlale .venv/bin/python manage.py migrate
+sudo -u bohlale .venv/bin/python manage.py seed_frameworks
 sudo -u bohlale .venv/bin/python manage.py collectstatic --noinput
 sudo systemctl restart bohlale-grc
 ```
+
+`seed_frameworks` is idempotent (safe on every deploy) and picks up any
+Framework Library content changes shipped in that release.
 
 Per spec §42, production must not be edited directly — all changes flow
 through the Git repository (source of truth) and are deployed via this
@@ -408,9 +425,16 @@ duplicate:
 
 ## Docker (optional, not required)
 
-The spec requires Docker to be *optional*, never mandatory. This project
-ships with none of the above assuming Docker, and no `Dockerfile` is
-provided by default — the venv + Gunicorn + systemd approach above is the
-supported path. If your infrastructure standardises on containers, the
-same `requirements.txt` and `config.wsgi:application` entry point can be
-wrapped in a container without any application code changes.
+The spec requires Docker to be *optional*, never mandatory, and everything
+above (venv + Gunicorn + systemd + Nginx directly on the host) remains the
+fully supported, Docker-free path — nothing here assumes Docker.
+
+A second, equally supported deployment path is also available for
+infrastructure that standardises on containers: `Dockerfile`,
+`compose.yml`, and a one-command installer (`sudo ./deployment/install.sh`)
+that builds the image, starts PostgreSQL and the app, waits for it to
+report healthy, and prints connection details. It uses the same
+`requirements.txt` and `config.wsgi:application` entry point as the VPS
+path — no application code differs between the two. See
+**`deployment/README.md`** for the full guide (install, update, backup,
+restore, rollback, health-check).

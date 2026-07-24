@@ -48,6 +48,16 @@ class Control(ReferenceCodeMixin, TenantScopedModel):
     def __str__(self):
         return f"{self.reference_code} {self.name}"
 
+    @property
+    def mapped_frameworks(self):
+        """Distinct frameworks this control satisfies requirements in —
+        the concrete, visible expression of cross-framework control
+        mapping (spec: one control can map to ISO 27001, POPIA, PAIA...
+        simultaneously)."""
+        from frameworks.models import Framework
+
+        return Framework.objects.filter(requirements__controls=self).distinct().order_by("name")
+
 
 class ControlTest(TenantScopedModel):
     control = models.ForeignKey(Control, on_delete=models.CASCADE, related_name="tests")

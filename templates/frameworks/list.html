@@ -1,36 +1,115 @@
 {% extends "base.html" %}
 {% load icons %}
-{% block title %}Frameworks — {{ active_organisation.name }}{% endblock %}
+{% block title %}Framework Library — {{ active_organisation.name }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Frameworks</h1>
-    <p class="subtitle">Standards and obligations {{ active_organisation.name }} is tracking, plus custom/imported frameworks.</p>
+    <h1>Framework Library</h1>
+    <p class="subtitle">Standards and obligations {{ active_organisation.name }} can track, plus your own custom and imported frameworks.</p>
   </div>
-  <a class="btn btn-secondary" href="{% url 'frameworks:import_list' %}">{% icon 'upload' 'nav-icon' %} Framework Studio</a>
+  <div class="flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'frameworks:import_list' %}">{% icon 'upload' 'nav-icon' %} Framework Studio</a>
+    <a class="btn btn-primary" href="{% url 'frameworks:create' %}">{% icon 'plus' 'nav-icon' %} Create Framework</a>
+  </div>
 </div>
 
-<div class="grid grid-3">
-  {% for row in rows %}
-  <div class="card">
-    <div class="card-title-row">
-      <h3>{{ row.framework.name }}</h3>
-      {% if row.framework.is_global %}<span class="badge badge-outline">Built-in</span>{% else %}<span class="badge badge-blue">Custom</span>{% endif %}
-    </div>
-    <p class="text-sm text-secondary">{{ row.framework.description|truncatewords:22 }}</p>
-    {% if row.adopted %}
-      <div class="progress-row">
-        <div class="progress-row-label"><span>Progress</span><span>{{ row.progress }}%</span></div>
-        <div class="progress-track"><div class="progress-fill" style="width: {{ row.progress }}%;"></div></div>
-      </div>
-      <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:detail' row.framework.pk %}">Open</a>
-    {% else %}
-      <form method="post" action="{% url 'frameworks:adopt' row.framework.pk %}">
-        {% csrf_token %}
-        <button class="btn btn-primary btn-sm" type="submit">Start tracking</button>
-      </form>
-    {% endif %}
+{% if not has_any_builtin and not custom_rows %}
+<div class="card empty-state">
+  {% icon 'framework' %}
+  <p class="font-semibold mb-1">Your Framework Library is empty.</p>
+  <p class="text-sm mb-3">Browse the built-in standards, import one from a file or pasted text, or start one from scratch.</p>
+  <div class="flex gap-2" style="justify-content:center;">
+    <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:import_list' %}">Browse Framework Library</a>
+    <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:import_create' %}">Import Custom Framework</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'frameworks:create' %}">Create Framework Manually</a>
   </div>
-  {% endfor %}
 </div>
+{% else %}
+
+<div id="library">
+{% for section in category_sections %}
+  <div class="section-block">
+    <div class="section-header">
+      <h2>{{ section.category.name|default:"Other Frameworks" }}</h2>
+      {% if section.category.description %}<p class="text-sm text-secondary">{{ section.category.description }}</p>{% endif %}
+    </div>
+    <div class="grid grid-3">
+      {% for row in section.rows %}
+      <div class="card">
+        <div class="card-title-row">
+          <div class="flex gap-2" style="align-items:center;">
+            {% icon row.framework.icon 'nav-icon' %}
+            <h3>{{ row.framework.name }}</h3>
+          </div>
+          <span class="badge badge-outline">Built-in</span>
+        </div>
+        <p class="text-xs text-muted mb-1">{{ row.framework.version }}</p>
+        <p class="text-sm text-secondary">{{ row.framework.description|truncatewords:22 }}</p>
+        {% if row.adopted %}
+          <div class="progress-row">
+            <div class="progress-row-label"><span>Progress</span><span>{{ row.progress }}%</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width: {{ row.progress }}%;"></div></div>
+          </div>
+          <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:detail' row.framework.pk %}">Open</a>
+        {% else %}
+          <form method="post" action="{% url 'frameworks:adopt' row.framework.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-primary btn-sm" type="submit">Start tracking</button>
+            <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:detail' row.framework.pk %}">View</a>
+          </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+</div>
+
+<div class="section-block">
+  <div class="section-header">
+    <h2>Custom &amp; Imported Frameworks</h2>
+    <p class="text-sm text-secondary">Frameworks {{ active_organisation.name }} has imported or created — visible only to your organisation.</p>
+  </div>
+  {% if custom_rows %}
+  <div class="grid grid-3">
+    {% for row in custom_rows %}
+    <div class="card">
+      <div class="card-title-row">
+        <div class="flex gap-2" style="align-items:center;">
+          {% icon row.framework.icon 'nav-icon' %}
+          <h3>{{ row.framework.name }}</h3>
+        </div>
+        <span class="badge badge-blue">{{ row.framework.get_source_type_display }}</span>
+      </div>
+      <p class="text-sm text-secondary">{{ row.framework.description|truncatewords:22 }}</p>
+      {% if row.adopted %}
+        <div class="progress-row">
+          <div class="progress-row-label"><span>Progress</span><span>{{ row.progress }}%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width: {{ row.progress }}%;"></div></div>
+        </div>
+        <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:detail' row.framework.pk %}">Open</a>
+      {% else %}
+        <form method="post" action="{% url 'frameworks:adopt' row.framework.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit">Start tracking</button>
+          <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:detail' row.framework.pk %}">View</a>
+        </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty-state">
+    {% icon 'upload' %}
+    <p class="font-semibold mb-1">No custom or imported frameworks yet.</p>
+    <p class="text-sm mb-3">Bring in a framework your clients or regulator requires, or build one from scratch.</p>
+    <div class="flex gap-2" style="justify-content:center;">
+      <a class="btn btn-secondary btn-sm" href="#library">Browse Framework Library</a>
+      <a class="btn btn-secondary btn-sm" href="{% url 'frameworks:import_create' %}">Import Custom Framework</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'frameworks:create' %}">Create Framework Manually</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
 {% endblock %}

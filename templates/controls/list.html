@@ -29,7 +29,7 @@
           {% else %}<span class="badge badge-red">Not Implemented</span>{% endif %}
         </td>
         <td>{{ control.get_effectiveness_display }}</td>
-        <td>{% for req in control.framework_requirements.all|slice:":3" %}<span class="badge badge-outline">{{ req.framework.code }}</span> {% endfor %}</td>
+        <td>{% for fw in control.mapped_frameworks|slice:":4" %}<span class="badge badge-outline">{{ fw.code }}</span> {% empty %}<span class="text-muted">—</span>{% endfor %}</td>
       </tr>
     {% empty %}
       <tr><td colspan="6" class="text-muted">No controls yet. Visit the <a href="{% url 'controls:soa' %}">Statement of Applicability</a> to seed the common control library.</td></tr>

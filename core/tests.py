@@ -220,7 +220,9 @@ class SeedNibsDemoTests(TestCase):
         from evidence.models import Evidence
         from reviews.models import ManagementReview
 
-        self.assertEqual(Control.objects.filter(organisation=org).count(), 17)
+        from controls.services import COMMON_CONTROLS
+
+        self.assertEqual(Control.objects.filter(organisation=org).count(), len(COMMON_CONTROLS))
         self.assertEqual(Evidence.objects.filter(organisation=org).count(), 4)
         self.assertTrue(Audit.objects.filter(organisation=org, status="closed").exists())
         self.assertTrue(ManagementReview.objects.filter(organisation=org, status="completed").exists())

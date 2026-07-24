@@ -24,7 +24,7 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 - `ai`: provider-independent AI abstraction (`MockProvider` default/offline, `OpenAICompatibleProvider` for real or Qwen-compatible endpoints), `AIGeneration` governance/traceability record.
 
 **Frameworks & guided implementation**
-- `frameworks`: framework engine (Framework → Domain → Requirement → AssessmentQuestion → EvidenceExpectation), Framework Studio (upload/paste → AI-assisted extraction → human review → publish), `seed_frameworks` (ISO 27001, POPIA, King IV, SABS ISO 9001 skeletons).
+- `frameworks`: framework engine (Framework → Domain → Requirement → AssessmentQuestion → EvidenceExpectation), Framework Library (category-grouped browse UI, South African Compliance pinned first, Create Framework Manually, empty states) alongside Framework Studio (upload/paste → AI-assisted extraction → human review → publish), Model CISO Assistant panel (explain control / suggest evidence / draft guidance). `seed_frameworks` seeds 10 built-in frameworks — ISO/IEC 27001:2022, ISO/IEC 27701, POPIA, PAIA, ISO 22301, SABS ISO 9001, ISO 31000, NIST CSF, CIS Controls v8, King IV — auto-run on every deployment.
 - `journeys`: Guided Implementation Engine, PDCA stage stepper, full 9-goal onboarding wizard, AI Guided Interview Engine, Information Request Engine (secure token-based external responses), `seed_journey_templates` (13-step ISO 27001 "Build an ISMS from Scratch" template).
 
 **Documents & policy management**

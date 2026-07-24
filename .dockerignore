@@ -1,0 +1,61 @@
+# Generic .dockerignore for a Django project. Keep dev-only, generated,
+# and secret material out of the build context — smaller/faster builds
+# and no risk of baking secrets or local data into an image layer.
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local secrets / environment
+.env
+.env.*
+!.env.example
+
+# Local SQLite dev database
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# Locally generated at container startup — never ship stale copies
+staticfiles/
+media/
+
+# IDE / OS cruft
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Claude Code / agent-session local state (not part of the application)
+.claude/
+
+# Docs are not needed inside the runtime image
+*.md
+!requirements.txt
+
+# Container tooling itself doesn't need to be re-sent as build context
+docker-compose*.yml
+compose*.yml
+Dockerfile*
+.dockerignore
+deployment/

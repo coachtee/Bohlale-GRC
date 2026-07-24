@@ -1,17 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Select a framework — {{ active_organisation.name }}{% endblock %}
+{% load icons %}
+{% block title %}Select frameworks — {{ active_organisation.name }}{% endblock %}
 {% block content_width_class %} content-narrow{% endblock %}
 {% block content %}
-<div class="page-header"><div><h1>Select a framework</h1><p class="subtitle">Which framework should this guided journey follow?</p></div></div>
-<div class="grid grid-2">
-  {% for fw in frameworks %}
-  <form method="post" class="card" style="cursor:pointer;">
-    {% csrf_token %}
-    <input type="hidden" name="framework_id" value="{{ fw.pk }}">
-    <div class="card-title-row"><h3>{{ fw.name }}</h3></div>
-    <p class="text-sm text-secondary">{{ fw.description|truncatewords:20 }}</p>
-    <button class="btn btn-primary btn-sm" type="submit">Select</button>
-  </form>
-  {% endfor %}
-</div>
+<div class="page-header"><div><h1>Select one or more frameworks</h1><p class="subtitle">Which frameworks should {{ active_organisation.name }} track? Your guided journey will start with the first one you pick — the rest are added to your Framework Library for tracking.</p></div></div>
+<form method="post">
+  {% csrf_token %}
+  <div class="grid grid-2">
+    {% for fw in frameworks %}
+    <label class="card" style="cursor:pointer;display:block;">
+      <div class="flex gap-2" style="align-items:flex-start;">
+        <input type="checkbox" name="framework_ids" value="{{ fw.pk }}" class="checkbox-input" style="margin-top:3px;">
+        <div>
+          <div class="flex gap-2" style="align-items:center;margin-bottom:4px;">
+            {% icon fw.icon 'nav-icon' %}
+            <h3 style="margin:0;">{{ fw.name }}</h3>
+          </div>
+          <p class="text-sm text-secondary">{{ fw.description|truncatewords:20 }}</p>
+        </div>
+      </div>
+    </label>
+    {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">Continue</button>
+  </div>
+</form>
 {% endblock %}
