@@ -8,8 +8,8 @@ See `BOHLALE_GRC_MASTER_SPEC.md` for the full product specification and `BUILD_S
 
 - Python 3.11 / Django 5.2
 - HTMX + vanilla CSS (no Node build pipeline)
-- SQLite for local development, PostgreSQL-ready for production
-- No Docker, no Redis, no Celery — a plain Django modular monolith deployable with Gunicorn + Nginx on any Linux VPS
+- SQLite for local development, PostgreSQL for production
+- No Redis, no Celery — a plain Django modular monolith. Deployable directly on a Linux VPS (Gunicorn + Nginx + systemd) or via Docker (`sudo ./deployment/install.sh`) — Docker is available, never required
 
 ## Local development setup
 
@@ -52,7 +52,10 @@ AI features are provider-independent (`ai/` app). A `MockProvider` is enabled by
 
 ## Deployment
 
-See `DEPLOYMENT.md` for the full VPS deployment guide (Nginx + Gunicorn + PostgreSQL, no Docker).
+Two fully supported paths:
+
+- **VPS, no Docker**: see `DEPLOYMENT.md` (Nginx + Gunicorn + systemd + PostgreSQL directly on the host).
+- **Docker**: `sudo ./deployment/install.sh` — one command builds the image, starts PostgreSQL and the app, and waits for it to report healthy. See `deployment/README.md` for the full guide (install, update, backup, restore, rollback, health-check). The same `Dockerfile`/`compose.yml`/`deployment/` toolkit is written generically enough to reuse for other Django projects (Bohlale Learn, Health, Notes, ...) — see the "Reusing this toolkit" section of `deployment/README.md`.
 
 ## Production readiness & security
 

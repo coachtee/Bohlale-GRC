@@ -1,0 +1,102 @@
+# Production Docker Compose stack for Bohlale GRC.
+#
+# Service names are fixed per this project's deployment requirements:
+#   - "bohlale-grc" (Django/Gunicorn)
+#   - "postgres"    (PostgreSQL 16)
+#
+# Everything else (project naming, credentials, ports, image tag, the
+# external network name) is env-var driven from .env, so this file can be
+# copied to another Django project by: renaming the "bohlale-grc" service
+# key, updating PROJECT_NAME/COMPOSE_PROJECT_NAME in .env, and pointing
+# EXTERNAL_NETWORK at that project's shared network (if any). Nothing else
+# in this file needs to change.
+#
+# Usage: see deployment/README.md. In short: sudo ./deployment/install.sh
+
+name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bohlale_grc}
+      POSTGRES_USER: ${POSTGRES_USER:-bohlale}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env before starting the stack}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bohlale} -d ${POSTGRES_DB:-bohlale_grc}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - internal
+    # Not published to the host by default - only bohlale-grc (on the
+    # same "internal" network) needs to reach it. Uncomment to allow a
+    # host-side psql client / GUI tool to connect directly during setup:
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
+
+  bohlale-grc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${IMAGE_NAME:-bohlale-grc}:${IMAGE_TAG:-latest}
+    container_name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Force the containerised database wiring regardless of what
+      # DB_ENGINE/DB_HOST a plain (non-Docker) .env might set for local
+      # `manage.py runserver` use - the compose stack always talks to the
+      # "postgres" service on the internal network by its service name.
+      DB_ENGINE: postgres
+      DB_NAME: ${POSTGRES_DB:-bohlale_grc}
+      DB_USER: ${POSTGRES_USER:-bohlale}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env before starting the stack}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+      - external
+
+networks:
+  # Private network shared only between bohlale-grc and its own postgres.
+  internal:
+    name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}_internal
+  # Pre-existing network (created by whatever reverse proxy / shared
+  # staging infrastructure fronts multiple Bohlale apps). This stack joins
+  # it but does not create or manage it - it must already exist:
+  #   docker network create bohlale-health-staging_private
+  # (deployment/install.sh checks for it and offers to create it if
+  # missing, since a fresh host won't have it yet.)
+  external:
+    name: ${EXTERNAL_NETWORK:-bohlale-health-staging_private}
+    external: true
+
+volumes:
+  postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}_postgres_data
+  static_files:
+    name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}_static
+  media_files:
+    name: ${COMPOSE_PROJECT_NAME:-bohlale-grc}_media
