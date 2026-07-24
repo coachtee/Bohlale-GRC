@@ -408,9 +408,16 @@ duplicate:
 
 ## Docker (optional, not required)
 
-The spec requires Docker to be *optional*, never mandatory. This project
-ships with none of the above assuming Docker, and no `Dockerfile` is
-provided by default — the venv + Gunicorn + systemd approach above is the
-supported path. If your infrastructure standardises on containers, the
-same `requirements.txt` and `config.wsgi:application` entry point can be
-wrapped in a container without any application code changes.
+The spec requires Docker to be *optional*, never mandatory, and everything
+above (venv + Gunicorn + systemd + Nginx directly on the host) remains the
+fully supported, Docker-free path — nothing here assumes Docker.
+
+A second, equally supported deployment path is also available for
+infrastructure that standardises on containers: `Dockerfile`,
+`compose.yml`, and a one-command installer (`sudo ./deployment/install.sh`)
+that builds the image, starts PostgreSQL and the app, waits for it to
+report healthy, and prints connection details. It uses the same
+`requirements.txt` and `config.wsgi:application` entry point as the VPS
+path — no application code differs between the two. See
+**`deployment/README.md`** for the full guide (install, update, backup,
+restore, rollback, health-check).

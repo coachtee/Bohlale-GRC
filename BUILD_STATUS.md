@@ -48,6 +48,24 @@ This session worked through a 26-section production-readiness/security-hardening
 
 `POPIA_READINESS.md`, `BACKUP_RESTORE.md`, `UAT_PLAN.md`, `UAT_RESULTS.md`, `SECURITY_AUDIT.md`, `PRODUCTION_READINESS.md`.
 
+## Session 3 — Docker deployment toolkit
+
+Added a second, fully supported deployment path (the VPS/systemd path in `DEPLOYMENT.md` is unchanged and still primary/Docker-free): `Dockerfile` (multi-stage, non-root runtime user, `HEALTHCHECK` against `/health/`), `.dockerignore`, `entrypoint.sh` (waits for Postgres via a real `psycopg2` connection attempt, runs migrations, collects static files, optionally auto-creates a superuser from `DJANGO_SUPERUSER_EMAIL`/`DJANGO_SUPERUSER_PASSWORD` — idempotent, verified live against the real app), `gunicorn.conf.py` (env-driven worker count/timeouts, `preload_app=True`), and `compose.yml` (services literally named `bohlale-grc` and `postgres` per this deployment's requirements, `postgres:16-alpine` with a persistent volume + `pg_isready` healthcheck, joins the pre-existing external network `bohlale-health-staging_private`, `restart: unless-stopped` on both services).
+
+`config/settings.py`'s Postgres block gained `CONN_MAX_AGE`/`CONN_HEALTH_CHECKS`/optional `DB_SSLMODE` (additive, env-driven, doesn't change the VPS path's behaviour beyond enabling connection reuse there too).
+
+A `deployment/` toolkit was written to be genuinely generic (no project name hardcoded except the two literal service-name/network-name requirements in `compose.yml` itself — see `deployment/README.md`'s "Reusing this toolkit" section) — reusable for Bohlale Learn/Health/Notes/future projects by copying the directory and changing `.env`:
+
+- `install.sh` — the one-command entry point (`sudo ./deployment/install.sh`): validates Docker/Compose, creates `.env` from `.env.example` with freshly generated `DJANGO_SECRET_KEY`/`POSTGRES_PASSWORD` if missing, creates the external network/volumes if missing, builds, migrates an existing `db.sqlite3`'s data into Postgres if one is found (dump → migrate → load → rename the original with a timestamp suffix so a re-run doesn't repeat it), starts the stack, and waits for `/health/` before printing a success summary.
+- `update.sh` — git pull → backup → tag the outgoing image as `:previous` → rebuild → migrate → collectstatic → restart → health-check.
+- `backup.sh` — `pg_dump` (custom format) + a copy of the media volume + a manifest, bundled into one timestamped `.tar.gz`, with age-based retention.
+- `restore.sh` — restores the latest (or a specified) backup archive; destructive, prompts for confirmation unless `FORCE=true`.
+- `rollback.sh` — retags `:previous` back to the live tag and delegates to `restore.sh` for the matching backup (the backup `update.sh` takes immediately before each deploy corresponds in time to that deploy's `:previous` image).
+- `health.sh` — container status + Postgres readiness + `/health/` check, non-zero exit on failure, suitable for cron/external monitoring.
+- `_lib.sh` — shared helpers (logging, `.env` loading/creation, Docker/Compose validation, the compose wrapper, health polling) sourced by every script above.
+
+**Verification performed in this sandbox** (no Docker daemon is available here — confirmed via `docker info`/`sudo service docker start`, both fail with a sandbox permission restriction, not a real-environment issue): every shell script passes `bash -n`; `compose.yml` was validated with a real `docker compose ... config` render (using a disposable `.env` with test values, removed afterward) confirming correct YAML, variable interpolation, service names (`bohlale-grc`, `postgres` — exact matches), external-network/volume naming, and that the `DB_ENGINE=postgres` override correctly takes precedence over a plain `.env`'s `DB_ENGINE=sqlite`; the `entrypoint.sh` superuser-creation logic was extracted and run live against the real Django app + a scratch SQLite database, confirming it creates a working superuser (password verified via `check_password`) and is idempotent on a second run. **What was not verified**: an actual `docker build`/`docker compose up` end-to-end run, since no Docker daemon is reachable in this environment — a human (or a session with daemon access) should run `sudo ./deployment/install.sh` once against a real Docker host before relying on this path for a real deployment, the same "verify, don't just document" principle applied to the backup/restore drill in `BACKUP_RESTORE.md`.
+
 ---
 
 ## Completed modules
