@@ -5,22 +5,36 @@
 # management command alike):
 #
 #   1. wait for the database to accept connections (Postgres only)
-#   2. run migrations
-#   3. seed the built-in Framework Library, if this project has one
-#   4. collect static files (for WhiteNoise)
-#   5. optionally create a superuser from env vars, if one doesn't exist
-#   6. exec the container's CMD (gunicorn by default)
+#   2. refuse to start if any model has changed without a matching migration
+#   3. run migrations
+#   4. seed the built-in Framework Library, if this project has one
+#   5. collect static files (for WhiteNoise)
+#   6. optionally create a superuser from env vars, if one doesn't exist
+#   7. exec the container's CMD (gunicorn by default)
 #
 # Nothing here is specific to Bohlale GRC - it only relies on `manage.py`
 # existing at /app and on the DB_* / DJANGO_SUPERUSER_* env var convention,
-# so this file can be reused unchanged by other Django projects. Step 3
+# so this file can be reused unchanged by other Django projects. Step 4
 # specifically checks the `seed_frameworks` management command actually
 # exists before calling it, so this stays true for a project (Bohlale
 # Learn/Health/Notes) that doesn't have one - it's skipped, not an error.
 #
+# Step 2 exists because of a real incident: a model field was widened
+# (max_length 40 -> 255) directly on `main` without running
+# `makemigrations`, so the live Postgres column stayed at varchar(40).
+# `migrate` itself didn't fail - it had nothing new to apply - so the
+# container sailed past it and only crashed later, deep inside
+# `seed_frameworks`, the first command to actually try inserting a value
+# over 40 characters. That crash happened *before* gunicorn ever
+# `exec`'d, so the container never bound to its port and looked
+# identical to a hung/unreachable-database failure from the outside.
+# This step catches that whole class of drift immediately, with an
+# unambiguous message, before any data-writing command runs.
+#
 # Each step can be individually disabled via env vars for special cases
 # (e.g. running a one-off shell without re-running migrations):
 #   RUN_MIGRATIONS=false
+#   CHECK_MIGRATION_DRIFT=false
 #   SEED_FRAMEWORK_LIBRARY=false
 #   RUN_COLLECTSTATIC=false
 #   WAIT_FOR_DB=false
@@ -32,6 +46,7 @@ log() {
 }
 
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
+CHECK_MIGRATION_DRIFT="${CHECK_MIGRATION_DRIFT:-true}"
 SEED_FRAMEWORK_LIBRARY="${SEED_FRAMEWORK_LIBRARY:-true}"
 RUN_COLLECTSTATIC="${RUN_COLLECTSTATIC:-true}"
 WAIT_FOR_DB="${WAIT_FOR_DB:-true}"
@@ -79,6 +94,27 @@ PYEOF
     done
 
     log "PostgreSQL is ready."
+}
+
+check_migration_drift() {
+    if [ "$CHECK_MIGRATION_DRIFT" != "true" ]; then
+        log "CHECK_MIGRATION_DRIFT=false - skipping migration-drift check."
+        return 0
+    fi
+    log "Checking for model changes missing a migration..."
+    if ! python manage.py makemigrations --check --dry-run --noinput >/tmp/migration_drift_check.log 2>&1; then
+        log "FATAL: one or more models have changed without a matching migration."
+        cat /tmp/migration_drift_check.log
+        log "This container will NOT start. A model was edited (directly or via a"
+        log "hand-made commit) without running 'python manage.py makemigrations'"
+        log "afterward, so the code and the database schema have drifted apart -"
+        log "starting anyway risks a hard crash the first time mismatched data is"
+        log "written (as happened in production), or silent data truncation."
+        log "Fix: run 'python manage.py makemigrations' locally, commit the"
+        log "generated migration file(s), and redeploy."
+        exit 1
+    fi
+    log "No migration drift detected."
 }
 
 run_migrations() {
@@ -147,6 +183,7 @@ PYEOF
 
 main() {
     wait_for_postgres
+    check_migration_drift
     run_migrations
     seed_framework_library
     collect_static
