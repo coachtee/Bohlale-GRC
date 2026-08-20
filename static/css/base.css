@@ -46,6 +46,16 @@
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.10);
+
+  /* Two-layer keyboard-focus ring (a background-colour gap, then the
+     ring itself) — reads as one crisp halo around the element instead
+     of a flat glow, borrowed from shadcn/ui's ring-offset pattern. Both
+     layers are theme-aware since they reference existing tokens, so
+     this holds up in dark mode without a separate override. */
+  --ring-width: 2px;
+  --ring-offset: 2px;
+  --ring-color: var(--text-primary);
 
   --sidebar-width: 248px;
   --topbar-height: 64px;
@@ -176,6 +186,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   font-size: 0.88rem;
   font-weight: 500;
   margin-bottom: 2px;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .nav-link:hover { background: var(--color-grey-100); color: var(--text-primary); }
 .nav-link.active { background: var(--color-black); color: var(--color-white); }
@@ -218,6 +229,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   background: transparent;
   cursor: pointer;
   position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .icon-btn:hover { background: var(--color-grey-100); color: var(--text-primary); }
 .icon-btn svg { width: 19px; height: 19px; }
@@ -236,6 +248,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   border-radius: var(--radius-full);
   cursor: pointer;
   border: 1px solid transparent;
+  transition: background-color 0.15s ease;
 }
 .user-menu-trigger:hover { background: var(--color-grey-100); }
 .avatar {
@@ -272,10 +285,21 @@ ul { margin: 0; padding: 0; list-style: none; }
   display: none;
   overflow: hidden;
 }
-.dropdown-panel.open { display: block; }
+.dropdown-panel.open {
+  display: block;
+  animation: dropdown-in 0.12s ease-out;
+}
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-panel.open { animation: none; }
+}
 .dropdown-panel .dropdown-item {
   display: block; padding: 10px 16px; font-size: 0.85rem;
   border-bottom: 1px solid var(--border-default);
+  transition: background-color 0.15s ease;
 }
 .dropdown-panel .dropdown-item:last-child { border-bottom: none; }
 .dropdown-panel .dropdown-item:hover { background: var(--color-grey-100); }
@@ -310,7 +334,16 @@ ul { margin: 0; padding: 0; list-style: none; }
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   padding: 20px;
+}
+/* A card that's also a clickable control (e.g. the framework-select
+   cards on onboarding) lifts slightly on hover — same shadow-scale
+   idea shadcn applies to interactive surfaces, kept subtle so static
+   cards elsewhere don't need an opt-out. */
+label.card:hover, a.card:hover {
+  border-color: var(--color-grey-300);
+  box-shadow: var(--shadow-md);
 }
 .card-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .card-title-row h3 { margin: 0; }
@@ -328,11 +361,16 @@ ul { margin: 0; padding: 0; list-style: none; }
   border: 1px solid transparent;
   cursor: pointer;
   line-height: 1.2;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 .btn-primary { background: var(--color-black); color: var(--color-white); }
 .btn-primary:hover { background: var(--color-ink); }
 .btn-secondary { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-default); }
 .btn-secondary:hover { background: var(--color-grey-100); }
+.btn-outline { background: transparent; color: var(--text-primary); border-color: var(--border-default); }
+.btn-outline:hover { background: var(--color-grey-100); border-color: var(--color-grey-300); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border-color: transparent; }
+.btn-ghost:hover { background: var(--color-grey-100); color: var(--text-primary); }
 .btn-danger { background: var(--color-red); color: white; }
 .btn-danger:hover { opacity: 0.9; }
 .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
@@ -349,8 +387,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   padding: 14px 10px;
   text-align: center;
   background: var(--bg-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.quick-action:hover { border-color: var(--color-grey-400); }
+.quick-action:hover { border-color: var(--color-grey-400); box-shadow: var(--shadow-sm); }
 .quick-action .qa-icon {
   width: 34px; height: 34px; margin: 0 auto 8px;
   border-radius: var(--radius-full);
@@ -391,8 +430,15 @@ ul { margin: 0; padding: 0; list-style: none; }
   gap: 12px;
   padding: 11px 0;
   border-bottom: 1px solid var(--border-default);
+  transition: background-color 0.15s ease;
 }
 .list-row:last-child { border-bottom: none; }
+/* Only the interactive variants (a row that's itself a clickable
+   label/link, e.g. the onboarding goal picker) get a hover affordance
+   — most .list-row usage is a static display row (activity feed,
+   "related risks" list, ...) where a hover highlight would wrongly
+   suggest it's clickable. */
+label.list-row:hover, a.list-row:hover { background: var(--color-grey-50); }
 .list-row-main { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
 .list-row-title { font-size: 0.86rem; font-weight: 600; }
 .list-row-meta { font-size: 0.74rem; color: var(--text-muted); }
@@ -470,31 +516,44 @@ ul { margin: 0; padding: 0; list-style: none; }
   color: var(--text-primary);
   font-family: inherit;
   font-size: 0.87rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus,
 input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,
 input[type="date"]:focus, input[type="number"]:focus, input[type="search"]:focus,
 input[type="url"]:focus, input[type="tel"]:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--color-black);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+  border-color: var(--ring-color);
+  box-shadow: 0 0 0 var(--ring-offset) var(--bg-surface), 0 0 0 calc(var(--ring-offset) + var(--ring-width)) var(--ring-color);
 }
 .form-textarea, textarea { resize: vertical; min-height: 90px; }
 .checkbox-input { width: auto; margin-right: 6px; }
 /* Checkboxes/radios keep the browser's native focus outline (removed
    above only for text-style inputs) — a border-colour change alone
    isn't a meaningful focus indicator on a checkbox. */
-.checkbox-input:focus-visible { outline: 2px solid var(--color-black); outline-offset: 2px; }
+.checkbox-input:focus-visible { outline: 2px solid var(--ring-color); outline-offset: 2px; }
 
 /* A visible, on-brand keyboard-focus indicator for every other
    interactive element (buttons, links, nav items) — without this,
    many browsers still show *something* by default, but not
    consistently enough to rely on (WCAG 2.4.11/2.4.13). Deliberately
-   :focus-visible (not :focus), so mouse clicks don't get a ring. */
-a:focus-visible, button:focus-visible, .btn:focus-visible, .nav-link:focus-visible,
-.icon-btn:focus-visible, .card-link:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid var(--color-black);
+   :focus-visible (not :focus), so mouse clicks don't get a ring.
+   Same two-layer ring token as the form-input focus style above, so
+   every focusable element in the app shares one consistent halo.
+   Plain inline text links (prose `<a>` tags) keep a simple outline —
+   box-shadow rings render per line-fragment on wrapped inline text,
+   which looks broken; every other focusable control here is a
+   block/inline-flex element the ring renders cleanly around. */
+a:focus-visible {
+  outline: 2px solid var(--ring-color);
   outline-offset: 2px;
+}
+button:focus-visible, .btn:focus-visible, .nav-link:focus-visible,
+.icon-btn:focus-visible, .card-link:focus-visible, [tabindex]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--ring-offset) var(--bg-surface), 0 0 0 calc(var(--ring-offset) + var(--ring-width)) var(--ring-color);
+  border-radius: var(--radius-sm);
 }
 .form-help { font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; }
 .form-errors { color: var(--color-red); font-size: 0.78rem; margin-top: 4px; }
@@ -512,12 +571,14 @@ table.data-table th {
 }
 table.data-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-default); vertical-align: top; }
 table.data-table tr:last-child td { border-bottom: none; }
+table.data-table tbody tr { transition: background-color 0.15s ease; }
 table.data-table tbody tr:hover { background: var(--color-grey-50); }
 
 /* ---------------------------------------------------------------- Tabs */
 
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-default); margin-bottom: 20px; }
-.tab-link { padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab-link { padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s ease, border-color 0.15s ease; }
+.tab-link:hover { color: var(--text-primary); }
 .tab-link.active { color: var(--text-primary); border-color: var(--color-black); }
 
 /* -------------------------------------------------------------- Empty */
