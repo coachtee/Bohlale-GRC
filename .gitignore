@@ -15,3 +15,6 @@ staticfiles/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Node tooling (shadcn MCP server only — this is otherwise a Python project)
+node_modules/
