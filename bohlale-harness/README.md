@@ -1,4 +1,8 @@
 # BOHLALE HARNESS
+
+> **READ THIS FIRST — authoritative handoff (5 November 2026)**
+> [MASTER_PRODUCT_SPEC_V2_2026-11-05.md](./MASTER_PRODUCT_SPEC_V2_2026-11-05.md) supersedes conflicting older prompts and specifications. It locks the approved one-logo homepage, complete user journey, application engine, Bohlale Analyst, admin console, self-diagnostics, AI costs and release gates. Always inspect the existing local code before implementing.
+
 ## Scan to Secure.
 
 **Status: approved product specification and development handoff — not a deployed or production-certified application.**
